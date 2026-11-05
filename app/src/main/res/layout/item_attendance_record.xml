@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <!-- Mã SV + Họ tên -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.4"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textFullName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nguyễn Văn A"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/textStudentId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2251120186"
+            android:textSize="12sp"
+            android:textColor="@color/colorTextSecondary"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Ngày (chỉ dùng ở chế độ Theo ngày) -->
+    <TextView
+        android:id="@+id/textDate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.8"
+        android:text="01/07"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:textColor="@color/colorTextSecondary" />
+
+    <!-- Giờ (chỉ dùng ở chế độ Theo ngày) -->
+    <TextView
+        android:id="@+id/textTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.8"
+        android:text="08:05"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:textColor="@color/colorTextSecondary" />
+
+    <!-- Số buổi (chỉ dùng ở chế độ Theo kì), ví dụ: "4/5 buổi" -->
+    <TextView
+        android:id="@+id/textSessionFraction"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.6"
+        android:text="4/5 buổi"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:visibility="gone"
+        android:textColor="@color/colorTextSecondary" />
+
+    <!-- Trạng thái -->
+    <TextView
+        android:id="@+id/textStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Đúng giờ"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:gravity="end"
+        android:textColor="@color/colorTextPrimary" />
+
+</LinearLayout>

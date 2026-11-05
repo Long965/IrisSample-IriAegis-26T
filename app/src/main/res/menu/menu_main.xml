@@ -1,0 +1,30 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.iritech.myapplication.MainActivity">
+
+    <item
+        android:id="@+id/action_profile"
+        android:orderInCategory="50"
+        android:title="Thông tin cá nhân"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_backup_restore"
+        android:orderInCategory="60"
+        android:title="Backup &amp; Restore"
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="Settings"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_logout"
+        android:icon="@drawable/icon_logout"
+    android:title="Đăng xuất"
+    app:showAsAction="ifRoom" />
+</menu>

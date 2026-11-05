@@ -1,0 +1,120 @@
+apply plugin: 'com.android.application'
+
+// Đọc local.properties để lấy Brevo SMTP config
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+}
+
+android {
+    signingConfigs {
+        ubioxiris {
+            storeFile file('./keystore/debug.keystore_ubioxPro')
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+            storePassword 'android'
+        }
+    }
+
+    compileSdkVersion 29
+    buildToolsVersion "29.0.2"
+    defaultConfig {
+        applicationId "com.iritech.android.irissample"
+        minSdkVersion 19
+        versionCode 2020126
+        versionName "2.0.20126"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        signingConfig signingConfigs.ubioxiris
+
+        // Inject Brevo SMTP config từ local.properties vào BuildConfig
+        buildConfigField "String", "BREVO_SMTP_LOGIN", "\"ad41bc001@smtp-brevo.com\""
+
+        buildConfigField "String", "BREVO_SENDER_EMAIL", "\"phungthuan677mc@gmail.com\""
+        buildConfigField "String", "BREVO_SENDER_NAME", "\"Iris Sample System\""
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-frtti -fexceptions"
+            }
+        }
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+            ndkVersion "16.1.4479499"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+//            useProguard true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            consumerProguardFiles 'proguard-rules.pro'
+            signingConfig signingConfigs.ubioxiris
+        }
+        debug{
+            signingConfig signingConfigs.ubioxiris
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    ndkVersion ndkVersion
+    packagingOptions {
+        doNotStrip "**/libmqel_irisreg704.so"
+        doNotStrip "**/libmqel_irisreg704s.so"
+    }
+
+    // Giải quyết xung đột file META-INF từ JavaMail libraries
+    packagingOptions {
+        exclude 'META-INF/NOTICE.md'
+        exclude 'META-INF/LICENSE.md'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+    }
+
+    ndkVersion ndkVersion
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
+    implementation 'com.google.android.material:material:1.0.0'
+    //implementation project(path: ':iris')
+    //implementation project(path: ':iricapture+')
+
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'com.google.code.gson:gson:2.2.4'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+
+    // InstanceID
+    implementation 'com.google.android.gms:play-services-gcm:17.0.0'
+    implementation 'com.googlecode.json-simple:json-simple:1.1'
+
+    // Thư viện vẽ biểu đồ MPAndroidChart phương án 1
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
+    // JavaMail API cho gửi email SMTP
+    implementation 'com.sun.mail:android-mail:1.6.7'
+    implementation 'com.sun.mail:android-activation:1.6.7'
+
+    // AndroidX Biometric - Device Lock (PIN/Pattern/Biometric)
+    implementation 'androidx.biometric:biometric:1.1.0'
+
+    implementation 'com.google.mlkit:face-detection:16.0.5'
+    // Thêm thư viện TensorFlow Lite để chạy model AI
+    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
+}

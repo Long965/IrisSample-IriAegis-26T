@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors - Teal Mint (#66CFCF) -->
+    <color name="colorPrimary">#66CFCF</color>
+    <color name="colorPrimaryDark">#3BA8A8</color>
+    <color name="colorPrimaryLight">#A8E6E6</color>
+    <color name="colorAccent">#FF8A65</color>
+
+    <!-- Secondary Colors -->
+    <color name="colorSecondary">#4DB6AC</color>
+    <color name="colorSecondaryDark">#00897B</color>
+    <color name="colorSecondaryLight">#B2DFDB</color>
+
+    <!-- Background Colors -->
+    <color name="colorBackground">#F5FAFA</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorCard">#FFFFFF</color>
+    <color name="colorCardElevated">#F8FFFE</color>
+
+    <!-- Text Colors -->
+    <color name="colorTextPrimary">#263238</color>
+    <color name="colorTextSecondary">#607D8B</color>
+    <color name="colorTextHint">#90A4AE</color>
+    <color name="colorTextOnPrimary">#FFFFFF</color>
+    <color name="colorTextOnAccent">#FFFFFF</color>
+    <color name="colorTextDark">#1B2631</color>
+
+    <!-- Status Colors -->
+    <color name="colorSuccess">#43A047</color>
+    <color name="colorSuccessLight">#E8F5E9</color>
+    <color name="colorError">#E53935</color>
+    <color name="colorErrorLight">#FFEBEE</color>
+    <color name="colorWarning">#FB8C00</color>
+    <color name="colorWarningLight">#FFF3E0</color>
+    <color name="colorInfo">#039BE5</color>
+    <color name="colorInfoLight">#E1F5FE</color>
+
+    <!-- Special Colors -->
+    <color name="colorDivider">#E0E0E0</color>
+    <color name="colorShadow">#14000000</color>
+    <color name="colorRipple">#2266CFCF</color>
+    <color name="colorOverlay">#66000000</color>
+    <color name="colorInputBg">#F5F8F8</color>
+    <color name="colorInputStroke">#CFD8DC</color>
+    <color name="colorInputStrokeFocused">#66CFCF</color>
+
+    <!-- Gradient Colors -->
+    <color name="gradientStart">#66CFCF</color>
+    <color name="gradientMiddle">#56BDB8</color>
+    <color name="gradientEnd">#3BA8A8</color>
+
+    <!-- Header Gradient (darker for text contrast) -->
+    <color name="headerGradientStart">#4DB6B6</color>
+    <color name="headerGradientEnd">#2D9E9E</color>
+
+    <!-- Card Accent Colors -->
+    <color name="cardAccentBlue">#E0F7FA</color>
+    <color name="cardAccentTeal">#E0F2F1</color>
+    <color name="cardAccentOrange">#FFF3E0</color>
+    <color name="cardAccentGreen">#E8F5E9</color>
+    <color name="cardAccentRed">#FFEBEE</color>
+    <color name="cardAccentPurple">#F3E5F5</color>
+
+    <!-- Specific Feature Colors -->
+    <color name="colorIris">#7E57C2</color>
+    <color name="colorIrisLight">#EDE7F6</color>
+    <color name="colorDemo">#F4511E</color>
+    <color name="colorDemoLight">#FBE9E7</color>
+
+    <!-- Tab Colors -->
+    <color name="tabActive">#66CFCF</color>
+    <color name="tabInactive">#B0BEC5</color>
+</resources>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.iritech.irissample"
+    android:testOnly="false">
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_app_logo"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:requestLegacyExternalStorage="true">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.iritech.irissample.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity
+            android:name="com.iritech.irissample.LoginActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <!-- Launcher intent -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            
+            <!-- Deep link intent - Mở app từ email -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Custom scheme: irissample://login -->
+                <data
+                    android:scheme="irissample"
+                    android:host="login" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".RegisterAdminActivity" />
+        <activity android:name=".AdminListActivity" />
+        <activity android:name=".AdminDetailActivity" />
+        <activity android:name=".ProfileActivity" />
+        <activity android:name=".SubjectListActivity" />
+        <activity android:name=".StudentListActivity" />
+        <activity android:name=".AddSubjectActivity" />
+        <activity android:name=".ImportCsvActivity" />
+        <activity android:name=".AddStudentActivity" />
+        <activity android:name=".ForgotPasswordActivity" />
+        <activity android:name=".MockCheckinActivity"
+            android:label="Mock Checkin - DEMO Mode" />
+        <activity android:name=".StudentManagementActivity" />
+        <activity android:name=".FaceCaptureActivity" />
+        <!-- AttendanceManagementActivity - Quản lý export CSV và gửi email báo cáo điểm danh -->
+        <activity android:name=".AttendanceManagementActivity"
+            android:label="Quản lý điểm danh"
+            android:parentActivityName=".StudentListActivity" />
+        
+        <!-- BackupRestoreActivity - Quản lý backup/restore database (chỉ Super Admin) -->
+        <activity android:name=".BackupRestoreActivity"
+            android:label="Backup &amp; Restore Database" />
+        
+        <!-- ResetPasswordActivity - Nhận deep link từ email reset password -->
+        <activity
+            android:name=".ResetPasswordActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <!-- Deep link intent - Reset password từ email -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Custom scheme: irissample://reset-password?email=xxx&token=xxx -->
+                <data
+                    android:scheme="irissample"
+                    android:host="reset-password" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="com.iritech.irissample.MainActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:screenOrientation="portrait">
+
+    </activity>
+
+
+    </application>
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <uses-permission android:name="android.permission.READ_MEDIA_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.UPDATE_DEVICE_STATE" />
+
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_SYNC_STATS" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.GET_TASKS"/>
+    <uses-permission android:name="android.permission.READ_OWNER_DATA"/>
+    <uses-permission android:name="android.permission.WRITE_OWNER_DATA"/>
+    <uses-permission android:name="com.id2mp.permissions.IRIS"/>
+
+</manifest>

@@ -1,0 +1,11 @@
+student_id,full_name,phone,email,photo_path
+SV001,Nguyễn Văn A,0123456789,nguyenvana@example.com,
+SV002,Trần Thị B,0987654321,tranthib@example.com,
+SV003,Lê Văn C,0912345678,levanc@example.com,
+SV004,Phạm Thị D,0901234567,phamthid@example.com,
+SV005,Hoàng Văn E,0898765432,hoangvane@example.com,
+SV006,Vũ Thị F,0887654321,vuthif@example.com,
+SV007,Đặng Văn G,0876543210,dangvang@example.com,
+SV008,Bùi Thị H,0865432109,buithih@example.com,
+SV009,Dương Văn I,0854321098,duongvani@example.com,
+SV010,Đinh Thị K,0843210987,dinhthik@example.com,

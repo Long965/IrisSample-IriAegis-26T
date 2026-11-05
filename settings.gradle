@@ -1,0 +1,7 @@
+include ':app'// , ':iricapture+', ':iris'
+rootProject.name='irissample'
+
+/*include ':app' , ':mqel_irisreg704', ':iris' , 'secretkeygenerator'
+project(':mqel_irisreg704').projectDir = new File(settingsDir, '../../sdk/mqel_irisreg704')
+project(':secretkeygenerator').projectDir = new File(settingsDir, '../../sdk/secretkeygenerator')
+rootProject.name='irissample'*/
