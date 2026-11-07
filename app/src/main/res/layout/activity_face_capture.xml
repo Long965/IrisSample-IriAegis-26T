@@ -14,6 +14,16 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/layoutBottom" />
 
+    <!-- Overlay chớp sáng màu trắng để kiểm tra phản chiếu ánh sáng (Screen Flash Challenge) -->
+    <View
+        android:id="@+id/vFlashOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
     <!-- Bottom controls -->
     <LinearLayout
         android:id="@+id/layoutBottom"
