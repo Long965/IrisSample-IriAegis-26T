@@ -24,8 +24,8 @@ public class AntiSpoofHelper {
 
     public static final String MODEL_FILE = "minivision_anti_spoof.tflite";
 
-    // Ngưỡng xác suất đánh giá người thật (Mặc định >= 0.50 là người thật)
-    private static final float REAL_THRESHOLD = 0.50f;
+`    // Ngưỡng xác suất đánh giá người thật (Tối ưu từ kết quả đánh giá thực tế: 0.95f)
+    private static final float REAL_THRESHOLD = 0.95f;
 
     private Interpreter tflite;
     private boolean isModelLoaded = false;
