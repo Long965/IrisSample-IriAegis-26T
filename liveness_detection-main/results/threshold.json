@@ -1,0 +1,12 @@
+{
+  "threshold": 0.1079649478197097,
+  "method": "Youden J tr\u00ean t\u1eadp train NUAA",
+  "auc_train": 1.0,
+  "auc_test": 1.0,
+  "auc_test_ci95": [
+    1.0,
+    1.0
+  ],
+  "n_train": 3484,
+  "n_test": 9122
+}

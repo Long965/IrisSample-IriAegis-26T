@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+run_check.ipynb
+# Dataset NUAA (~400 MB): không đưa lên GitHub, tải từ Kaggle rồi đặt vào data/
+data/raw/
+data/dataset.zip
