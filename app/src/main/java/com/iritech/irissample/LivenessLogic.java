@@ -28,14 +28,14 @@ public class LivenessLogic {
         FAILED                  // Thất bại
     }
 
-    // Các ngưỡng cấu hình cho Liveness
-    public static final float EYE_CLOSED_THRESHOLD  = 0.25f;  // Ngưỡng mắt nhắm (<= 0.25)
-    public static final float EYE_OPEN_THRESHOLD    = 0.70f;  // Ngưỡng mắt mở (>= 0.70)
+    // Các ngưỡng cấu hình cho Liveness (đã tinh chỉnh chặt hơn để tránh tự qua bước chớp mắt)
+    public static final float EYE_CLOSED_THRESHOLD   = 0.15f;  // Ngưỡng mắt nhắm (<= 0.15)
+    public static final float EYE_OPEN_THRESHOLD     = 0.75f;  // Ngưỡng mắt mở (>= 0.75)
     public static final float HEAD_SHAKE_LEFT_ANGLE  = -15.0f; // Góc quay trái (<= -15 độ)
     public static final float HEAD_SHAKE_RIGHT_ANGLE = 15.0f;  // Góc quay phải (>= 15 độ)
 
-    // Ngưỡng biến thiên phối cảnh 3D khi quay đầu
-    private static final float MIN_3D_PERSPECTIVE_VARIANCE = 0.05f;
+    // Giảm ngưỡng biến thiên phối cảnh 3D xuống 0.025f để hỗ trợ trường hợp để mặt cách xa điện thoại
+    private static final float MIN_3D_PERSPECTIVE_VARIANCE = 0.025f;
 
     // Ngưỡng chênh lệch độ sáng (Luma Shift) khi chớp màu màn hình
     public static final float MIN_FLASH_LUMA_SHIFT = 6.0f;
@@ -52,7 +52,9 @@ public class LivenessLogic {
     private State currentState = State.IDLE;
     private OnLivenessStateChangeListener listener;
 
-    // Biến lưu trạng thái chớp mắt
+    // Biến lưu trạng thái chớp mắt (yêu cầu mắt mở ổn định trước khi nhắm)
+    private int initialOpenFrames = 0;
+    private static final int REQUIRED_OPEN_FRAMES_BEFORE_BLINK = 3;
     private boolean hasEyeClosed = false;
 
     // Biến lưu trạng thái lắc đầu
@@ -66,6 +68,9 @@ public class LivenessLogic {
 
     // Biến theo dõi phản xạ ánh sáng (Screen Flash)
     private boolean hasFlashPassed = false;
+
+    // Cờ theo dõi trạng thái mất khuôn mặt để khôi phục thông báo khi đưa mặt vào lại
+    private boolean isFaceLost = false;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
@@ -92,6 +97,7 @@ public class LivenessLogic {
     public void reset() {
         stopTimeoutTimer();
         currentState = State.IDLE;
+        initialOpenFrames = 0;
         hasEyeClosed = false;
         hasTurnedLeft = false;
         hasTurnedRight = false;
@@ -99,6 +105,7 @@ public class LivenessLogic {
         maxEyeRatio = 0.0f;
         has3DPerspectiveShift = false;
         hasFlashPassed = false;
+        isFaceLost = false;
     }
 
     /**
@@ -110,10 +117,17 @@ public class LivenessLogic {
         }
 
         if (face == null) {
-            if (currentState != State.WAITING_FOR_FACE) {
+            if (currentState != State.WAITING_FOR_FACE && !isFaceLost) {
+                isFaceLost = true;
                 notifyInstruction("Không tìm thấy khuôn mặt, vui lòng nhìn thẳng camera");
             }
             return;
+        }
+
+        // Khôi phục lại câu hướng dẫn của bước hiện tại ngay khi đưa mặt vào lại camera
+        if (isFaceLost) {
+            isFaceLost = false;
+            notifyInstruction(getInstructionForCurrentState());
         }
 
         Float leftEye  = face.getLeftEyeOpenProbability();
@@ -125,6 +139,21 @@ public class LivenessLogic {
 
         // 2. Chạy luồng State Machine
         processFaceValues(leftEye, rightEye, headY);
+    }
+
+    private String getInstructionForCurrentState() {
+        switch (currentState) {
+            case WAITING_FOR_FACE:
+                return "Vui lòng đưa khuôn mặt vào khung hình";
+            case BLINK_REQUESTED:
+                return "Bước 1/3: Vui lòng chớp mắt";
+            case HEAD_SHAKE_REQUESTED:
+                return "Bước 2/3: Vui lòng quay sang trái & quay sang phải";
+            case FLASH_CHALLENGE:
+                return "Bước 3/3: Đang kiểm tra phản chiếu ánh sáng...";
+            default:
+                return "";
+        }
     }
 
     /**
@@ -179,11 +208,15 @@ public class LivenessLogic {
         boolean eyesCurrentlyClosed = (leftEyeProb <= EYE_CLOSED_THRESHOLD && rightEyeProb <= EYE_CLOSED_THRESHOLD);
         boolean eyesCurrentlyOpen   = (leftEyeProb >= EYE_OPEN_THRESHOLD && rightEyeProb >= EYE_OPEN_THRESHOLD);
 
-        if (eyesCurrentlyClosed) {
-            hasEyeClosed = true;
-        }
-
-        if (hasEyeClosed && eyesCurrentlyOpen) {
+        // Bắt buộc mắt phải mở to ổn định trước khi ghi nhận hành động nhắm mắt
+        if (!hasEyeClosed) {
+            if (eyesCurrentlyOpen) {
+                initialOpenFrames++;
+            }
+            if (initialOpenFrames >= REQUIRED_OPEN_FRAMES_BEFORE_BLINK && eyesCurrentlyClosed) {
+                hasEyeClosed = true;
+            }
+        } else if (eyesCurrentlyOpen) {
             changeState(State.HEAD_SHAKE_REQUESTED, "Bước 2/3: Vui lòng quay sang trái & quay sang phải");
         }
     }
@@ -218,7 +251,7 @@ public class LivenessLogic {
     }
 
     /**
-     * Xác nhận kết quả phân tích độ sáng (Luma) phản chiếu màn hình
+     * Xác nhận kết quả phân tích độ sáng/phổ màu phản chiếu màn hình
      */
     public void onFlashChallengeResult(boolean success, float lumaShift) {
         if (currentState != State.FLASH_CHALLENGE) return;
@@ -226,12 +259,12 @@ public class LivenessLogic {
         if (success) {
             hasFlashPassed = true;
             stopTimeoutTimer();
-            changeState(State.COMPLETED, "Xác thực Liveness thành công!");
+            changeState(State.COMPLETED, "Xác thực thành công!");
             if (listener != null) {
                 listener.onLivenessCompleted();
             }
         } else {
-            fail("Phát hiện video giả mạo! Màn hình không phản chiếu ánh sáng (LumaShift: " + String.format("%.2f", lumaShift) + ")");
+            fail("Phát hiện video giả mạo");
         }
     }
 
@@ -258,7 +291,7 @@ public class LivenessLogic {
 
     private void startTimeoutTimer() {
         stopTimeoutTimer();
-        timeoutRunnable = () -> fail("Hết thời gian xác thực (Timeout)");
+        timeoutRunnable = () -> fail("Hết thời gian xác thực");
         mainHandler.postDelayed(timeoutRunnable, timeoutMs);
     }
 

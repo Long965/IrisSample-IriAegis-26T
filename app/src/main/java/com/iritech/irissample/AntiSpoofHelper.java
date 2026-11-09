@@ -159,6 +159,9 @@ public class AntiSpoofHelper {
 
             int[] intValues = new int[inputWidth * inputHeight];
             scaledBitmap.getPixels(intValues, 0, inputWidth, 0, 0, inputWidth, inputHeight);
+            if (scaledBitmap != faceBitmap) {
+                scaledBitmap.recycle();
+            }
 
             if (isNCHW) {
                 // Định dạng PyTorch [1, 3, H, W]
