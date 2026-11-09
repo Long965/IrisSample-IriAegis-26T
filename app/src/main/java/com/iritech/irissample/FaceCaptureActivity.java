@@ -832,7 +832,7 @@ public class FaceCaptureActivity extends AppCompatActivity
             if (duplicateId != null) {
                 croppedFace.recycle();
                 runOnUiThread(() -> {
-                    tvStatus.setText("Khuôn mặt đã tồn tại: " + duplicateId);
+                    tvStatus.setText("❌ Khuôn mặt đã tồn tại: " + duplicateId);
                     resetCaptureState();
                 });
                 return;
@@ -852,7 +852,7 @@ public class FaceCaptureActivity extends AppCompatActivity
                         if (oldEmbedding == null || currentEmbedding == null) {
                             croppedFace.recycle();
                             runOnUiThread(() -> {
-                                tvStatus.setText("Không trích xuất được đặc trưng khuôn mặt! Hãy thử lại.");
+                                tvStatus.setText("❌ Không trích xuất được đặc trưng khuôn mặt! Hãy thử lại.");
                                 resetCaptureState();
                             });
                             return;
@@ -862,7 +862,7 @@ public class FaceCaptureActivity extends AppCompatActivity
                         if (!isOwner) {
                             croppedFace.recycle();
                             runOnUiThread(() -> {
-                                tvStatus.setText("Khuôn mặt không khớp với ảnh hiện tại!");
+                                tvStatus.setText("❌ Khuôn mặt không khớp với ảnh hiện tại!");
                                 resetCaptureState();
                             });
                             return;
@@ -872,7 +872,7 @@ public class FaceCaptureActivity extends AppCompatActivity
             }
 
             // Hợp lệ hoàn toàn → lưu dạng ảnh tạm và trả về
-            runOnUiThread(() -> tvStatus.setText("Xác thực thành công!"));
+            runOnUiThread(() -> tvStatus.setText("✅ Xác thực thành công!"));
             savePhotoAndReturn(croppedFace);
 
         } catch (Exception e) {

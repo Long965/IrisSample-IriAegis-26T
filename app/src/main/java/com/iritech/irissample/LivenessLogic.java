@@ -264,7 +264,7 @@ public class LivenessLogic {
                 listener.onLivenessCompleted();
             }
         } else {
-            fail("Phát hiện video giả mạo");
+            fail("Phát hiện video giả mạo! Màn hình không phản chiếu ánh sáng (Shift: " + String.format("%.3f", lumaShift) + ")");
         }
     }
 
