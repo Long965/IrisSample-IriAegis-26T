@@ -259,7 +259,7 @@ public class LivenessLogic {
         if (success) {
             hasFlashPassed = true;
             stopTimeoutTimer();
-            changeState(State.COMPLETED, "Xác thực thành công!");
+            changeState(State.COMPLETED, "Xác thực Liveness thành công!");
             if (listener != null) {
                 listener.onLivenessCompleted();
             }
@@ -291,7 +291,7 @@ public class LivenessLogic {
 
     private void startTimeoutTimer() {
         stopTimeoutTimer();
-        timeoutRunnable = () -> fail("Hết thời gian xác thực");
+        timeoutRunnable = () -> fail("Hết thời gian xác thực (Timeout)");
         mainHandler.postDelayed(timeoutRunnable, timeoutMs);
     }
 

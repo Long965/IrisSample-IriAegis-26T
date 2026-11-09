@@ -150,6 +150,7 @@ public class FaceCaptureActivity extends AppCompatActivity
 
             @Override
             public void onLivenessCompleted() {
+                runOnUiThread(() -> tvStatus.setText("✅ Liveness hợp lệ! Đang so khớp khuôn mặt..."));
             }
 
             @Override
@@ -600,12 +601,11 @@ public class FaceCaptureActivity extends AppCompatActivity
 
                                 Rect bounds = detectedFace.getBoundingBox();
 
-                                // 1. Cắt sát mặt có margin 15% cho MobileFaceNet so khớp chủ
-                                int margin = (int) (Math.max(bounds.width(), bounds.height()) * 0.15f);
-                                int tx = Math.max(0, bounds.left - margin);
-                                int ty = Math.max(0, bounds.top - margin);
-                                int tw = Math.min(rotatedBitmap.getWidth()  - tx, bounds.width()  + margin * 2);
-                                int th = Math.min(rotatedBitmap.getHeight() - ty, bounds.height() + margin * 2);
+                                // 1. Cắt sát mặt (Tight Crop) cho MobileFaceNet so khớp chủ
+                                int tx = Math.max(0, bounds.left);
+                                int ty = Math.max(0, bounds.top);
+                                int tw = Math.min(bounds.width(),  rotatedBitmap.getWidth()  - tx);
+                                int th = Math.min(bounds.height(), rotatedBitmap.getHeight() - ty);
 
                                 // 2. Cắt rộng (Expanded Crop 2.5x) cho MiniVision AI Anti-Spoofing
                                 int centerX = bounds.centerX();
@@ -651,7 +651,7 @@ public class FaceCaptureActivity extends AppCompatActivity
 
             if (!spoofResult.isReal()) {
                 Log.w(TAG, "Phát hiện thiết bị giả mạo / quay lại màn hình! RealScore: " + spoofResult.getRealScore() + ", SpoofScore: " + spoofResult.getSpoofScore());
-                runOnUiThread(() -> tvStatus.setText("Phát hiện dấu hiệu giả mạo\n\nKhông xác minh được khuôn mặt là người thật. Vui lòng thử lại."));
+                runOnUiThread(() -> tvStatus.setText(String.format("❌ Phát hiện video/ảnh giả mạo! (Score: %.2f)", spoofResult.getSpoofScore())));
                 if (livenessLogic != null) {
                     livenessLogic.reset();
                     livenessLogic.start();
@@ -697,7 +697,7 @@ public class FaceCaptureActivity extends AppCompatActivity
         if (matched) {
             stopTimeout();
             isSafeToCapture = false;
-            runOnUiThread(() -> tvStatus.setText("Xác thực thành công!"));
+            runOnUiThread(() -> tvStatus.setText("✅ Xác thực thành công!"));
 
             Intent result = new Intent();
             result.putExtra(RESULT_FACE_MATCHED, true);
@@ -705,7 +705,7 @@ public class FaceCaptureActivity extends AppCompatActivity
             finish();
         } else {
             startTimeoutCount();
-            runOnUiThread(() -> tvStatus.setText("Không khớp. Đang quét lại..."));
+            runOnUiThread(() -> tvStatus.setText("Không khớp. Vui lòng nhìn thẳng camera. Đang quét lại..."));
             surfaceView.postDelayed(() -> isProcessingFrame = false, 500);
         }
     }
@@ -793,7 +793,7 @@ public class FaceCaptureActivity extends AppCompatActivity
                 .addOnSuccessListener(faces -> {
                     if (faces == null || faces.isEmpty()) {
                         rotatedBitmap.recycle();
-                        tvStatus.setText("Không tìm thấy khuôn mặt! Hãy thử lại.");
+                        tvStatus.setText("❌ Không tìm thấy khuôn mặt! Hãy thử lại.");
                         resetCaptureState();
                         return;
                     }
@@ -807,7 +807,7 @@ public class FaceCaptureActivity extends AppCompatActivity
 
                     if (w <= 0 || h <= 0) {
                         rotatedBitmap.recycle();
-                        tvStatus.setText("Vùng khuôn mặt lỗi! Hãy thử lại.");
+                        tvStatus.setText("❌ Vùng khuôn mặt lỗi! Hãy thử lại.");
                         resetCaptureState();
                         return;
                     }
