@@ -10,11 +10,11 @@ import com.google.mlkit.vision.face.FaceLandmark;
 /**
  * Lớp quản lý logic xác thực Liveness Detection nâng cao (Multilayer Anti-Spoofing):
  *  1. WAITING_FOR_FACE: Chờ mở camera và phát hiện khuôn mặt hợp lệ.
- *  2. BLINK_REQUESTED: Yêu cầu chớp mắt + Bẫy giữ thẳng đầu (chống video vừa lắc vừa chớp).
+ *  2. BLINK_REQUESTED: Yêu cầu chớp mắt + Bẫy giữ thẳng đầu + Phát hiện chớp mắt cắt ghép.
  *  3. HEAD_SHAKE_REQUESTED: Yêu cầu lắc đầu + Kiểm tra Thị sai 3D Mũi-Mắt (3D Nose Parallax) + Nhìn thẳng lại.
- *  4. FLASH_CHALLENGE: Thử thách phản xạ ánh sáng màn hình (Screen Flash Reflection Challenge).
+ *  4. FLASH_CHALLENGE: Thử thử phản xạ ánh sáng màn hình (Screen Flash Reflection Challenge).
  *  5. COMPLETED: Xác thực thành công.
- *  6. FAILED: Thất bại do timeout hoặc phát hiện video giả mạo.
+ *  6. FAILED: Thất bại do timeout, video đứng hình, cắt ghép hoặc phát hiện video giả mạo.
  */
 public class LivenessLogic {
 
@@ -31,13 +31,24 @@ public class LivenessLogic {
     // Các ngưỡng cấu hình cho Liveness
     public static final float EYE_CLOSED_THRESHOLD   = 0.15f;  // Ngưỡng mắt nhắm (<= 0.15)
     public static final float EYE_OPEN_THRESHOLD     = 0.75f;  // Ngưỡng mắt mở (>= 0.75)
-    public static final float HEAD_SHAKE_LEFT_ANGLE  = -11.5f; // Góc quay trái (<= -15 độ)
-    public static final float HEAD_SHAKE_RIGHT_ANGLE = 11.5f;  // Góc quay phải (>= 15 độ)
+    public static final float HEAD_SHAKE_LEFT_ANGLE  = -11.5f; // Góc quay trái (<= -11.5 độ)
+    public static final float HEAD_SHAKE_RIGHT_ANGLE = 11.5f;  // Góc quay phải (>= 11.5 độ)
     public static final float HEAD_CENTER_ANGLE      = 10.0f;  // Góc nhìn thẳng lại sau khi lắc đầu (|Y| <= 10 độ)
 
+    // Ngưỡng kiểm tra gián đoạn / đứng hình video (TC05-FUNCT-011)
+    private static final float STATIC_EULER_THRESHOLD      = 0.01f;  // Độ biến thiên góc quay Euler (độ)
+    private static final float STATIC_NOSE_THRESHOLD       = 0.15f;  // Độ biến thiên vị trí mũi (pixel)
+    private static final float STATIC_EYE_PROB_THRESHOLD   = 0.001f; // Độ biến thiên xác suất mắt mở
+    private static final int   MAX_STATIC_FRAMES_ALLOWED   = 28;     // 28 frame đứng hình liên tiếp (~1.0 giây)
+    private static final int   FREEZE_RESUME_STATIC_FRAMES = 18;     // Nếu đứng hình >= 18 frame rồi đột ngột chuyển động lại -> Video freeze-resume
+
+    // Ngưỡng phát hiện cắt ghép video / chuyển động nhảy vọt bất thường (TC05-FUNCT-013)
+    private static final float MAX_FRAME_PITCH_ROLL_DELTA  = 25.0f;  // Nhảy góc ngửa/nghiêng > 25 độ/frame
+    private static final float MAX_FRAME_YAW_DELTA_NORMAL  = 35.0f;  // Nhảy góc quay Y > 35 độ/frame ở trạng thái tĩnh
+
     // Ngưỡng biến thiên phối cảnh 3D & Thị sai Mũi - Mắt (3D Nose-to-Eye Parallax)
-    private static final float MIN_3D_PERSPECTIVE_VARIANCE = 0.025f;
-    private static final float MIN_NOSE_PARALLAX_VARIANCE  = 0.12f;
+    private static final float MIN_3D_PERSPECTIVE_VARIANCE = 0.015f;
+    private static final float MIN_NOSE_PARALLAX_VARIANCE  = 0.05f;
 
     public static final float MIN_FLASH_LUMA_SHIFT = 6.0f;
     private static final long DEFAULT_TIMEOUT_MS = 25000; // Timeout 25 giây
@@ -63,7 +74,6 @@ public class LivenessLogic {
     private boolean hasTurnedRight = false;
     private int centerHoldFrames   = 0;
     private static final int REQUIRED_CENTER_HOLD_FRAMES = 3;
-    private Float prevHeadY        = null;
 
     // Biến theo dõi biến thiên không gian 3D & Thị sai Mũi (Nose Parallax)
     private float minEyeRatio  = 1.0f;
@@ -76,7 +86,22 @@ public class LivenessLogic {
     private boolean hasFlashPassed = false;
     private boolean isFaceLost     = false;
 
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    // Biến theo dõi đứng hình & cắt ghép khung hình
+    private int consecutiveStaticFrames = 0;
+    private Float prevHeadY        = null;
+    private Float prevHeadX        = null;
+    private Float prevHeadZ        = null;
+    private Float prevNoseX        = null;
+    private Float prevNoseY        = null;
+    private Float prevLeftEyeProb  = null;
+    private Float prevRightEyeProb = null;
+
+    // Biến theo dõi chuỗi chớp mắt liên tục (TC05-FUNCT-013)
+    private Float blinkStartHeadY = null;
+    private Float blinkStartHeadX = null;
+    private Float blinkStartHeadZ = null;
+
+    private Handler mainHandler;
     private Runnable timeoutRunnable;
     private long timeoutMs = DEFAULT_TIMEOUT_MS;
 
@@ -86,6 +111,14 @@ public class LivenessLogic {
 
     public LivenessLogic(OnLivenessStateChangeListener listener) {
         this.listener = listener;
+        try {
+            Looper mainLooper = Looper.getMainLooper();
+            if (mainLooper != null) {
+                this.mainHandler = new Handler(mainLooper);
+            }
+        } catch (Exception ignored) {
+            this.mainHandler = null;
+        }
     }
 
     public void setListener(OnLivenessStateChangeListener listener) {
@@ -108,6 +141,16 @@ public class LivenessLogic {
         hasTurnedRight = false;
         centerHoldFrames = 0;
         prevHeadY = null;
+        prevHeadX = null;
+        prevHeadZ = null;
+        prevNoseX = null;
+        prevNoseY = null;
+        prevLeftEyeProb = null;
+        prevRightEyeProb = null;
+        consecutiveStaticFrames = 0;
+        blinkStartHeadY = null;
+        blinkStartHeadX = null;
+        blinkStartHeadZ = null;
         minEyeRatio = 1.0f;
         maxEyeRatio = 0.0f;
         minNoseRatio = 1.0f;
@@ -148,13 +191,71 @@ public class LivenessLogic {
         Float leftEye  = face.getLeftEyeOpenProbability();
         Float rightEye = face.getRightEyeOpenProbability();
         float headY    = face.getHeadEulerAngleY();
+        float headX    = face.getHeadEulerAngleX();
+        float headZ    = face.getHeadEulerAngleZ();
 
-        // Bẫy chống tua/cắt ghép video: góc đầu nhảy quá 24 độ trong 1 frame đơn lẻ
-        if (prevHeadY != null && Math.abs(headY - prevHeadY) > 24.0f) {
-            fail("Phát hiện chuyển động video bất thường!");
-            return;
+        FaceLandmark noseLandmark = face.getLandmark(FaceLandmark.NOSE_BASE);
+        float noseX = (noseLandmark != null) ? noseLandmark.getPosition().x : 0f;
+        float noseY = (noseLandmark != null) ? noseLandmark.getPosition().y : 0f;
+
+        // -----------------------------------------------------------------------
+        // A. KIỂM TRA ĐỨNG HÌNH (FREEZE FRAME DETECTION - TC05-FUNCT-011)
+        // -----------------------------------------------------------------------
+        if (prevHeadY != null && prevHeadX != null && prevHeadZ != null && noseLandmark != null && prevNoseX != null) {
+            float dY = Math.abs(headY - prevHeadY);
+            float dX = Math.abs(headX - prevHeadX);
+            float dZ = Math.abs(headZ - prevHeadZ);
+            float dNoseX = Math.abs(noseX - prevNoseX);
+            float dNoseY = Math.abs(noseY - prevNoseY);
+            float dEyeL  = (leftEye != null && prevLeftEyeProb != null) ? Math.abs(leftEye - prevLeftEyeProb) : 0f;
+            float dEyeR  = (rightEye != null && prevRightEyeProb != null) ? Math.abs(rightEye - prevRightEyeProb) : 0f;
+
+            boolean isStatic = (dY <= STATIC_EULER_THRESHOLD)
+                    && (dX <= STATIC_EULER_THRESHOLD)
+                    && (dZ <= STATIC_EULER_THRESHOLD)
+                    && (dNoseX <= STATIC_NOSE_THRESHOLD)
+                    && (dNoseY <= STATIC_NOSE_THRESHOLD)
+                    && (dEyeL <= STATIC_EYE_PROB_THRESHOLD)
+                    && (dEyeR <= STATIC_EYE_PROB_THRESHOLD);
+
+            if (isStatic) {
+                consecutiveStaticFrames++;
+                if (consecutiveStaticFrames >= MAX_STATIC_FRAMES_ALLOWED) {
+                    fail("Phát hiện gián đoạn chuyển động (Video bị đứng hình)!");
+                    return;
+                }
+            } else {
+                // Video đã đứng hình >= 18 frame (~0.6s) rồi đột ngột tiếp tục chuyển động
+                if (consecutiveStaticFrames >= FREEZE_RESUME_STATIC_FRAMES) {
+                    fail("Phát hiện gián đoạn chuyển động (Video đứng hình rồi tiếp tục phát)!");
+                    return;
+                }
+                consecutiveStaticFrames = 0;
+            }
+
+            // -----------------------------------------------------------------------
+            // B. KIỂM TRA NHẢY KHUNG HÌNH DO CẮT GHÉP VIDEO (SPLICE / CUT DETECTION)
+            // Cho phép người thật quay đầu ở bước HEAD_SHAKE_REQUESTED
+            // -----------------------------------------------------------------------
+            if (!isStatic) {
+                boolean isShakingHead = (currentState == State.HEAD_SHAKE_REQUESTED);
+                float allowedMaxYaw = isShakingHead ? 50.0f : MAX_FRAME_YAW_DELTA_NORMAL;
+
+                if (dY > allowedMaxYaw || dX > MAX_FRAME_PITCH_ROLL_DELTA || dZ > MAX_FRAME_PITCH_ROLL_DELTA) {
+                    fail("Phát hiện chuỗi chuyển động bất thường (Video bị cắt ghép)!");
+                    return;
+                }
+            }
         }
+
+        // Cập nhật giá trị cũ
         prevHeadY = headY;
+        prevHeadX = headX;
+        prevHeadZ = headZ;
+        prevNoseX = noseX;
+        prevNoseY = noseY;
+        prevLeftEyeProb = leftEye;
+        prevRightEyeProb = rightEye;
 
         // 1. Kiểm tra 3D Perspective & Thị sai Mũi - Mắt
         check3DPerspective(face);
@@ -196,6 +297,7 @@ public class LivenessLogic {
         FaceLandmark noseLandmark  = face.getLandmark(FaceLandmark.NOSE_BASE);
         Rect bounds = face.getBoundingBox();
 
+        // 1. Phân tích qua Landmark: Bắt buộc có biến thiên khoảng cách mắt hoặc thị sai chóp mũi 3D thực tế
         if (leftLandmark != null && rightLandmark != null && bounds != null && bounds.width() > 0) {
             float lx = leftLandmark.getPosition().x;
             float rx = rightLandmark.getPosition().x;
@@ -216,7 +318,7 @@ public class LivenessLogic {
                 noseVariance = maxNoseRatio - minNoseRatio;
             }
 
-            if (eyeVariance >= MIN_3D_PERSPECTIVE_VARIANCE && noseVariance >= MIN_NOSE_PARALLAX_VARIANCE) {
+            if (eyeVariance >= MIN_3D_PERSPECTIVE_VARIANCE || noseVariance >= MIN_NOSE_PARALLAX_VARIANCE) {
                 has3DPerspectiveShift = true;
             }
         }
@@ -266,6 +368,11 @@ public class LivenessLogic {
                 initialOpenFrames++;
             }
             if (initialOpenFrames >= REQUIRED_OPEN_FRAMES_BEFORE_BLINK && eyesCurrentlyClosed) {
+                // Lưu vị trí đầu khi bắt đầu nhắm mắt để so sánh với khi mở mắt trở lại
+                blinkStartHeadY = headEulerAngleY;
+                blinkStartHeadX = prevHeadX;
+                blinkStartHeadZ = prevHeadZ;
+
                 hasEyeClosed = true;
                 closedFrameCount = 1;
             }
@@ -279,6 +386,20 @@ public class LivenessLogic {
                     hasEyeClosed = false;
                 }
             } else if (eyesCurrentlyOpen) {
+                // Khi mắt mở lại, kiểm tra tư thế đầu có bị nhảy vọt do cắt ghép 2 video clip khác nhau không
+                if (blinkStartHeadY != null && prevHeadX != null && prevHeadZ != null) {
+                    float dy = Math.abs(headEulerAngleY - blinkStartHeadY);
+                    float dx = (blinkStartHeadX != null) ? Math.abs(prevHeadX - blinkStartHeadX) : 0f;
+                    float dz = (blinkStartHeadZ != null) ? Math.abs(prevHeadZ - blinkStartHeadZ) : 0f;
+
+                    // Nếu tư thế đầu giữa lúc nhắm mắt và khi mở mắt bị nhảy lệch mạnh > 15.0 độ -> Video bị cắt ghép!
+                    if (dy > 15.0f || dx > 15.0f || dz > 15.0f) {
+                        fail("Phát hiện chuỗi chuyển động bất thường (Hành động chớp mắt bị cắt ghép)!");
+                        return;
+                    }
+                }
+
+                // Chớp mắt hợp lệ cho người thật
                 changeState(State.HEAD_SHAKE_REQUESTED, "Bước 2/3: Vui lòng quay sang trái & quay sang phải");
             }
         }
@@ -360,11 +481,13 @@ public class LivenessLogic {
     private void startTimeoutTimer() {
         stopTimeoutTimer();
         timeoutRunnable = () -> fail("Hết thời gian xác thực (Timeout)");
-        mainHandler.postDelayed(timeoutRunnable, timeoutMs);
+        if (mainHandler != null) {
+            mainHandler.postDelayed(timeoutRunnable, timeoutMs);
+        }
     }
 
     private void stopTimeoutTimer() {
-        if (timeoutRunnable != null) {
+        if (timeoutRunnable != null && mainHandler != null) {
             mainHandler.removeCallbacks(timeoutRunnable);
             timeoutRunnable = null;
         }

@@ -1,0 +1,4 @@
+#Sun Nov 15 15:45:55 ICT 2026
+base.0=D\:\\IRITECH\\Project_HKDN\\IrisSample-IriAegis-26T\\app\\build\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

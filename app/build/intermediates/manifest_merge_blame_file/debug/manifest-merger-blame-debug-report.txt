@@ -1,0 +1,373 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.iritech.android.irissample"
+4    android:testOnly="false"
+5    android:versionCode="2020126"
+6    android:versionName="2.0.20126" >
+7
+8    <uses-sdk
+9        android:minSdkVersion="19"
+9-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml
+10        android:targetSdkVersion="19" />
+10-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml
+11
+12    <uses-permission android:name="android.permission.CAMERA" />
+12-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:96:5-65
+12-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:96:22-62
+13    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+13-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:97:5-76
+13-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:97:22-73
+14    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+14-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:99:5-75
+14-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:99:22-72
+15    <uses-permission android:name="android.permission.VIBRATE" />
+15-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:100:5-66
+15-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:100:22-63
+16    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+16-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:101:5-71
+16-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:101:22-68
+17    <uses-permission android:name="android.permission.WAKE_LOCK" />
+17-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:102:5-68
+17-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:102:22-65
+18    <uses-permission android:name="android.permission.INTERNET" />
+18-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:103:5-67
+18-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:103:22-64
+19    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+19-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:104:5-79
+19-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:104:22-76
+20    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+20-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:105:5-79
+20-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:105:22-76
+21    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+21-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:106:5-79
+21-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:106:22-76
+22    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+22-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:107:5-80
+22-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:107:22-77
+23    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+23-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:108:5-81
+23-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:108:22-78
+24    <uses-permission android:name="android.permission.READ_MEDIA_STORAGE" />
+24-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:110:5-77
+24-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:110:22-74
+25    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+25-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:111:5-76
+25-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:111:22-73
+26    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+26-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:112:5-76
+26-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:112:22-73
+27    <uses-permission android:name="android.permission.UPDATE_DEVICE_STATE" />
+27-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:113:5-78
+27-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:113:22-75
+28    <uses-permission android:name="android.permission.BLUETOOTH" />
+28-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:116:5-68
+28-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:116:22-65
+29    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+29-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:117:5-74
+29-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:117:22-71
+30    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+30-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:118:5-75
+30-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:118:22-72
+31    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+31-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:120:5-77
+31-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:120:22-74
+32    <uses-permission android:name="android.permission.READ_SYNC_STATS" />
+32-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:121:5-74
+32-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:121:22-71
+33    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+33-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:123:5-81
+33-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:123:22-78
+34    <uses-permission android:name="android.permission.GET_TASKS" />
+34-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:124:5-67
+34-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:124:22-65
+35    <uses-permission android:name="android.permission.READ_OWNER_DATA" />
+35-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:125:5-73
+35-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:125:22-71
+36    <uses-permission android:name="android.permission.WRITE_OWNER_DATA" />
+36-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:126:5-74
+36-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:126:22-72
+37    <uses-permission android:name="com.id2mp.permissions.IRIS" />
+37-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:127:5-65
+37-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:127:22-63
+38    <uses-permission android:name="android.permission.USE_BIOMETRIC" /> <!-- suppress DeprecatedClassUsageInspection -->
+38-->[androidx.biometric:biometric:1.1.0] C:\Users\PC\.gradle\caches\transforms-3\667773d5e4c521bbb952a39f757df34b\transformed\biometric-1.1.0\AndroidManifest.xml:24:5-72
+38-->[androidx.biometric:biometric:1.1.0] C:\Users\PC\.gradle\caches\transforms-3\667773d5e4c521bbb952a39f757df34b\transformed\biometric-1.1.0\AndroidManifest.xml:24:22-69
+39    <uses-permission android:name="android.permission.USE_FINGERPRINT" /> <!-- Required by older versions of Google Play services to create GCM registration tokens -->
+39-->[androidx.biometric:biometric:1.1.0] C:\Users\PC\.gradle\caches\transforms-3\667773d5e4c521bbb952a39f757df34b\transformed\biometric-1.1.0\AndroidManifest.xml:27:5-74
+39-->[androidx.biometric:biometric:1.1.0] C:\Users\PC\.gradle\caches\transforms-3\667773d5e4c521bbb952a39f757df34b\transformed\biometric-1.1.0\AndroidManifest.xml:27:22-71
+40    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+40-->[com.google.android.gms:play-services-gcm:17.0.0] C:\Users\PC\.gradle\caches\transforms-3\2b9a6e7ffef9b49bc9fc2a71a4f998c7\transformed\jetified-play-services-gcm-17.0.0\AndroidManifest.xml:23:5-82
+40-->[com.google.android.gms:play-services-gcm:17.0.0] C:\Users\PC\.gradle\caches\transforms-3\2b9a6e7ffef9b49bc9fc2a71a4f998c7\transformed\jetified-play-services-gcm-17.0.0\AndroidManifest.xml:23:22-79
+41
+42    <application
+42-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:5:5-94:19
+43        android:allowBackup="true"
+43-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:6:9-35
+44        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+44-->[androidx.core:core:1.3.2] C:\Users\PC\.gradle\caches\transforms-3\28688315779f306da45b3fffeb333e05\transformed\core-1.3.2\AndroidManifest.xml:24:18-86
+45        android:debuggable="true"
+46        android:icon="@drawable/ic_app_logo"
+46-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:7:9-45
+47        android:label="@string/app_name"
+47-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:8:9-41
+48        android:requestLegacyExternalStorage="true"
+48-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:11:9-52
+49        android:supportsRtl="true"
+49-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:9:9-35
+50        android:testOnly="true"
+51        android:theme="@style/AppTheme" >
+51-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:10:9-40
+52        <provider
+52-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:13:9-21:20
+53            android:name="androidx.core.content.FileProvider"
+53-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:14:13-62
+54            android:authorities="com.iritech.irissample.fileprovider"
+54-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:15:13-70
+55            android:exported="false"
+55-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:16:13-37
+56            android:grantUriPermissions="true" >
+56-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:17:13-47
+57            <meta-data
+57-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:18:13-20:54
+58                android:name="android.support.FILE_PROVIDER_PATHS"
+58-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:19:17-67
+59                android:resource="@xml/file_paths" />
+59-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:20:17-51
+60        </provider>
+61
+62        <activity
+62-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:23:9-44:20
+63            android:name="com.iritech.irissample.LoginActivity"
+63-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:24:13-64
+64            android:exported="true"
+64-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:25:13-36
+65            android:launchMode="singleTask" >
+65-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:26:13-44
+66
+67            <!-- Launcher intent -->
+68            <intent-filter>
+68-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:28:13-31:29
+69                <action android:name="android.intent.action.MAIN" />
+69-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:29:17-69
+69-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:29:25-66
+70
+71                <category android:name="android.intent.category.LAUNCHER" />
+71-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:30:17-77
+71-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:30:27-74
+72            </intent-filter>
+73
+74            <!-- Deep link intent - Mở app từ email -->
+75            <intent-filter android:autoVerify="true" >
+75-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:34:13-43:29
+75-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:34:28-53
+76                <action android:name="android.intent.action.VIEW" />
+76-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:35:17-69
+76-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:35:25-66
+77
+78                <category android:name="android.intent.category.DEFAULT" />
+78-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:36:17-76
+78-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:36:27-73
+79                <category android:name="android.intent.category.BROWSABLE" />
+79-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:37:17-78
+79-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:37:27-75
+80
+81                <!-- Custom scheme: irissample://login -->
+82                <data
+82-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:40:17-42:44
+83                    android:host="login"
+83-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:42:21-41
+84                    android:scheme="irissample" />
+84-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:41:21-48
+85            </intent-filter>
+86        </activity>
+87        <activity android:name="com.iritech.irissample.RegisterAdminActivity" />
+87-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:46:9-59
+87-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:46:19-56
+88        <activity android:name="com.iritech.irissample.AdminListActivity" />
+88-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:47:9-55
+88-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:47:19-52
+89        <activity android:name="com.iritech.irissample.AdminDetailActivity" />
+89-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:48:9-57
+89-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:48:19-54
+90        <activity android:name="com.iritech.irissample.ProfileActivity" />
+90-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:49:9-53
+90-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:49:19-50
+91        <activity android:name="com.iritech.irissample.SubjectListActivity" />
+91-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:50:9-57
+91-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:50:19-54
+92        <activity android:name="com.iritech.irissample.StudentListActivity" />
+92-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:51:9-57
+92-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:51:19-54
+93        <activity android:name="com.iritech.irissample.AddSubjectActivity" />
+93-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:52:9-56
+93-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:52:19-53
+94        <activity android:name="com.iritech.irissample.ImportCsvActivity" />
+94-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:53:9-55
+94-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:53:19-52
+95        <activity android:name="com.iritech.irissample.AddStudentActivity" />
+95-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:54:9-56
+95-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:54:19-53
+96        <activity android:name="com.iritech.irissample.ForgotPasswordActivity" />
+96-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:55:9-60
+96-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:55:19-57
+97        <activity
+97-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:56:9-57:56
+98            android:name="com.iritech.irissample.MockCheckinActivity"
+98-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:56:19-54
+99            android:label="Mock Checkin - DEMO Mode" />
+99-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:57:13-53
+100        <activity android:name="com.iritech.irissample.StudentManagementActivity" />
+100-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:58:9-63
+100-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:58:19-60
+101        <activity android:name="com.iritech.irissample.FaceCaptureActivity" />
+101-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:59:9-57
+101-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:59:19-54
+102        <!-- AttendanceManagementActivity - Quản lý export CSV và gửi email báo cáo điểm danh -->
+103        <activity
+103-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:61:9-63:65
+104            android:name="com.iritech.irissample.AttendanceManagementActivity"
+104-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:61:19-63
+105            android:label="Quản lý điểm danh"
+105-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:62:13-46
+106            android:parentActivityName="com.iritech.irissample.StudentListActivity" />
+106-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:63:13-62
+107
+108        <!-- BackupRestoreActivity - Quản lý backup/restore database (chỉ Super Admin) -->
+109        <activity
+109-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:66:9-67:61
+110            android:name="com.iritech.irissample.BackupRestoreActivity"
+110-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:66:19-56
+111            android:label="Backup &amp; Restore Database" />
+111-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:67:13-58
+112
+113        <!-- ResetPasswordActivity - Nhận deep link từ email reset password -->
+114        <activity
+114-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:70:9-85:20
+115            android:name="com.iritech.irissample.ResetPasswordActivity"
+115-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:71:13-50
+116            android:exported="true"
+116-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:72:13-36
+117            android:launchMode="singleTask" >
+117-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:73:13-44
+118
+119            <!-- Deep link intent - Reset password từ email -->
+120            <intent-filter android:autoVerify="true" >
+120-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:75:13-84:29
+120-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:75:28-53
+121                <action android:name="android.intent.action.VIEW" />
+121-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:35:17-69
+121-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:35:25-66
+122
+123                <category android:name="android.intent.category.DEFAULT" />
+123-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:36:17-76
+123-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:36:27-73
+124                <category android:name="android.intent.category.BROWSABLE" />
+124-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:37:17-78
+124-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:37:27-75
+125
+126                <!-- Custom scheme: irissample://reset-password?email=xxx&token=xxx -->
+127                <data
+127-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:40:17-42:44
+128                    android:host="reset-password"
+128-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:42:21-41
+129                    android:scheme="irissample" />
+129-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:41:21-48
+130            </intent-filter>
+131        </activity>
+132        <activity
+132-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:87:9-91:16
+133            android:name="com.iritech.irissample.MainActivity"
+133-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:87:19-69
+134            android:screenOrientation="portrait"
+134-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:89:13-49
+135            android:theme="@style/AppTheme.NoActionBar" >
+135-->D:\IRITECH\Project_HKDN\IrisSample-IriAegis-26T\app\src\main\AndroidManifest.xml:88:13-56
+136        </activity>
+137
+138        <service
+138-->[com.google.android.gms:play-services-mlkit-face-detection:16.1.4] C:\Users\PC\.gradle\caches\transforms-3\75f57493d2a4f0f9830de9a53ba26462\transformed\jetified-play-services-mlkit-face-detection-16.1.4\AndroidManifest.xml:9:9-15:19
+139            android:name="com.google.mlkit.common.internal.MlKitComponentDiscoveryService"
+139-->[com.google.android.gms:play-services-mlkit-face-detection:16.1.4] C:\Users\PC\.gradle\caches\transforms-3\75f57493d2a4f0f9830de9a53ba26462\transformed\jetified-play-services-mlkit-face-detection-16.1.4\AndroidManifest.xml:10:13-91
+140            android:directBootAware="true"
+140-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:17:13-43
+141            android:exported="false" >
+141-->[com.google.android.gms:play-services-mlkit-face-detection:16.1.4] C:\Users\PC\.gradle\caches\transforms-3\75f57493d2a4f0f9830de9a53ba26462\transformed\jetified-play-services-mlkit-face-detection-16.1.4\AndroidManifest.xml:11:13-37
+142            <meta-data
+142-->[com.google.android.gms:play-services-mlkit-face-detection:16.1.4] C:\Users\PC\.gradle\caches\transforms-3\75f57493d2a4f0f9830de9a53ba26462\transformed\jetified-play-services-mlkit-face-detection-16.1.4\AndroidManifest.xml:12:13-14:85
+143                android:name="com.google.firebase.components:com.google.mlkit.vision.face.internal.FaceRegistrar"
+143-->[com.google.android.gms:play-services-mlkit-face-detection:16.1.4] C:\Users\PC\.gradle\caches\transforms-3\75f57493d2a4f0f9830de9a53ba26462\transformed\jetified-play-services-mlkit-face-detection-16.1.4\AndroidManifest.xml:13:17-114
+144                android:value="com.google.firebase.components.ComponentRegistrar" />
+144-->[com.google.android.gms:play-services-mlkit-face-detection:16.1.4] C:\Users\PC\.gradle\caches\transforms-3\75f57493d2a4f0f9830de9a53ba26462\transformed\jetified-play-services-mlkit-face-detection-16.1.4\AndroidManifest.xml:14:17-82
+145            <meta-data
+145-->[com.google.mlkit:vision-common:16.3.0] C:\Users\PC\.gradle\caches\transforms-3\edfee1ca92f767540c7c2be967236b0a\transformed\jetified-vision-common-16.3.0\AndroidManifest.xml:12:13-14:85
+146                android:name="com.google.firebase.components:com.google.mlkit.vision.common.internal.VisionCommonRegistrar"
+146-->[com.google.mlkit:vision-common:16.3.0] C:\Users\PC\.gradle\caches\transforms-3\edfee1ca92f767540c7c2be967236b0a\transformed\jetified-vision-common-16.3.0\AndroidManifest.xml:13:17-124
+147                android:value="com.google.firebase.components.ComponentRegistrar" />
+147-->[com.google.mlkit:vision-common:16.3.0] C:\Users\PC\.gradle\caches\transforms-3\edfee1ca92f767540c7c2be967236b0a\transformed\jetified-vision-common-16.3.0\AndroidManifest.xml:14:17-82
+148            <meta-data
+148-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:20:13-22:85
+149                android:name="com.google.firebase.components:com.google.mlkit.common.internal.CommonComponentRegistrar"
+149-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:21:17-120
+150                android:value="com.google.firebase.components.ComponentRegistrar" />
+150-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:22:17-82
+151        </service>
+152
+153        <provider
+153-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:9:9-13:38
+154            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+154-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:10:13-78
+155            android:authorities="com.iritech.android.irissample.mlkitinitprovider"
+155-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:11:13-69
+156            android:exported="false"
+156-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:12:13-37
+157            android:initOrder="99" />
+157-->[com.google.mlkit:common:17.1.1] C:\Users\PC\.gradle\caches\transforms-3\e10fc507af8ba91614b8fb18eeb0a731\transformed\jetified-common-17.1.1\AndroidManifest.xml:13:13-35
+158
+159        <activity
+159-->[com.google.android.gms:play-services-base:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\4fc804ba22cb14b395cf0964ab771aa0\transformed\jetified-play-services-base-17.6.0\AndroidManifest.xml:23:9-26:75
+160            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+160-->[com.google.android.gms:play-services-base:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\4fc804ba22cb14b395cf0964ab771aa0\transformed\jetified-play-services-base-17.6.0\AndroidManifest.xml:24:13-79
+161            android:exported="false"
+161-->[com.google.android.gms:play-services-base:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\4fc804ba22cb14b395cf0964ab771aa0\transformed\jetified-play-services-base-17.6.0\AndroidManifest.xml:25:13-37
+162            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+162-->[com.google.android.gms:play-services-base:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\4fc804ba22cb14b395cf0964ab771aa0\transformed\jetified-play-services-base-17.6.0\AndroidManifest.xml:26:13-72
+163
+164        <meta-data
+164-->[com.google.android.gms:play-services-basement:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\972a8c274abaa157f923dbecf42cbc04\transformed\jetified-play-services-basement-17.6.0\AndroidManifest.xml:23:9-25:69
+165            android:name="com.google.android.gms.version"
+165-->[com.google.android.gms:play-services-basement:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\972a8c274abaa157f923dbecf42cbc04\transformed\jetified-play-services-basement-17.6.0\AndroidManifest.xml:24:13-58
+166            android:value="@integer/google_play_services_version" />
+166-->[com.google.android.gms:play-services-basement:17.6.0] C:\Users\PC\.gradle\caches\transforms-3\972a8c274abaa157f923dbecf42cbc04\transformed\jetified-play-services-basement-17.6.0\AndroidManifest.xml:25:13-66
+167
+168        <service
+168-->[com.google.android.datatransport:transport-backend-cct:2.3.2] C:\Users\PC\.gradle\caches\transforms-3\c4117e78117bc1ce90a586bed5dfcd1e\transformed\jetified-transport-backend-cct-2.3.2\AndroidManifest.xml:29:9-35:19
+169            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+169-->[com.google.android.datatransport:transport-backend-cct:2.3.2] C:\Users\PC\.gradle\caches\transforms-3\c4117e78117bc1ce90a586bed5dfcd1e\transformed\jetified-transport-backend-cct-2.3.2\AndroidManifest.xml:30:13-103
+170            android:exported="false" >
+170-->[com.google.android.datatransport:transport-backend-cct:2.3.2] C:\Users\PC\.gradle\caches\transforms-3\c4117e78117bc1ce90a586bed5dfcd1e\transformed\jetified-transport-backend-cct-2.3.2\AndroidManifest.xml:31:13-37
+171            <meta-data
+171-->[com.google.android.datatransport:transport-backend-cct:2.3.2] C:\Users\PC\.gradle\caches\transforms-3\c4117e78117bc1ce90a586bed5dfcd1e\transformed\jetified-transport-backend-cct-2.3.2\AndroidManifest.xml:32:13-34:39
+172                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+172-->[com.google.android.datatransport:transport-backend-cct:2.3.2] C:\Users\PC\.gradle\caches\transforms-3\c4117e78117bc1ce90a586bed5dfcd1e\transformed\jetified-transport-backend-cct-2.3.2\AndroidManifest.xml:33:17-94
+173                android:value="cct" />
+173-->[com.google.android.datatransport:transport-backend-cct:2.3.2] C:\Users\PC\.gradle\caches\transforms-3\c4117e78117bc1ce90a586bed5dfcd1e\transformed\jetified-transport-backend-cct-2.3.2\AndroidManifest.xml:34:17-36
+174        </service>
+175        <service
+175-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:26:9-30:19
+176            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+176-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:27:13-117
+177            android:exported="false"
+177-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:28:13-37
+178            android:permission="android.permission.BIND_JOB_SERVICE" >
+178-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:29:13-69
+179        </service>
+180
+181        <receiver
+181-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:32:9-34:40
+182            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+182-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:33:13-132
+183            android:exported="false" />
+183-->[com.google.android.datatransport:transport-runtime:2.2.5] C:\Users\PC\.gradle\caches\transforms-3\278d36b2ccd64670d8665c87594712b6\transformed\jetified-transport-runtime-2.2.5\AndroidManifest.xml:34:13-37
+184    </application>
+185
+186</manifest>

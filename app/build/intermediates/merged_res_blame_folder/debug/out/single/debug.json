@@ -1,0 +1,626 @@
+[
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_csv_import.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_csv_import.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_success_box.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_success_box.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_add_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_add_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_person.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_person.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_export.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_export.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_backup_restore.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_backup_restore.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_person.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_person.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_face_capture.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_face_capture.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_export.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_export.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_fingerprint_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_fingerprint_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_csv_import.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_csv_import.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v24_ic_launcher_foreground.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v24/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_initials_circle.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_initials_circle.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_upload_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_upload_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_test.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_test.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_button_primary.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/button_primary.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_edit_text_bg.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/edit_text_bg.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_badge.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_badge.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_divider_line.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/divider_line.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_button_secondary.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/button_secondary.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_student_management.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_student_management.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_upload_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_upload_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_checkin_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_checkin_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_forgot_password.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_forgot_password.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_launcher_background.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_upload_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_upload_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/menu_menu_main.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/menu/menu_main.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_time.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_time.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_warning.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_warning.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_add_subject.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_add_subject.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_subject_list.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_subject_list.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_add_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_add_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_item_admin.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/item_admin.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_csv_import.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_csv_import.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_badge.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_badge.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_checkin_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_checkin_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_gradient_background.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/gradient_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_logout.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/logout.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_upload_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_upload_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_warning.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_warning.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_add_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_add_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_export.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_export.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_csv_import.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_csv_import.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_fingerprint_white.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_fingerprint_white.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_admin_list.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_admin_list.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_add_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_add_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_circle_background.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/circle_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_header.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_header.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_warning_box.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_warning_box.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_upload_white.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_upload_white.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_badge.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_badge.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_person.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_person.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_fab_secondary.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_fab_secondary.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/menu_menu_subject_options.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/menu/menu_subject_options.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_warning.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_warning.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/xml_file_paths.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/xml/file_paths.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_login_top.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_login_top.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_import_csv.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_import_csv.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_fingerprint_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_fingerprint_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_avatar_circle_bg.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/avatar_circle_bg.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_person.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_person.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_upload_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_upload_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_student_list.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_student_list.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_export.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_export.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_dashboard_card.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/dashboard_card.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_launcher_background.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_button_iris.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/button_iris.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_button_warning.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/button_warning.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_item_student.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/item_student.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_time.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_time.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_card_top_accent.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_card_top_accent.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_badge.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_badge.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_export.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_export.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_info_box.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_info_box.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_warning.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_warning.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_admin_detail.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_admin_detail.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_export.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_export.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_fingerprint_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_fingerprint_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_badge.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_badge.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_person.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_person.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_button_success.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/button_success.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_badge.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_badge.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_avatar_circle.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_avatar_circle.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_launcher_background.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_fingerprint_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_fingerprint_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_time.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_time.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_register_admin.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_register_admin.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_item_email_recipient.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/item_email_recipient.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_card_background.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/card_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_checkin_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_checkin_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_icon_logout.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/icon_logout.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_best_image_dialog.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/best_image_dialog.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_launcher_background.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_dialog_student_attendance_stats.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/dialog_student_attendance_stats.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_warning.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_warning.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_add_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_add_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_launcher_background.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_ic_app_logo.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/ic_app_logo.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_fingerprint_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_fingerprint_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_time.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_time.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_checkin_white.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_checkin_white.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_card_bordered.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/card_bordered.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_subject_code.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_subject_code.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_add_student.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_add_student.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_person.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_person.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_csv_import.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_csv_import.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_add_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_add_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_time.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_time.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_launcher_background.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_badge.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_badge.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_item_student_mgmt.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/item_student_mgmt.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_student_normal.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_student_normal.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_fingerprint_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_fingerprint_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_reset_password.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_reset_password.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-mdpi_ic_export.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-mdpi/ic_export.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_login.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_login.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_launcher_background.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_launcher_background.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_item_attendance_record.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/item_attendance_record.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_profile.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_profile.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_student_selected.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_student_selected.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_main.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_person.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_person.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_time.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_time.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_search_bar.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_search_bar.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_csv_import.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_csv_import.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_attendance_management.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_attendance_management.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_item_subject.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/item_subject.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxxhdpi_ic_checkin_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxxhdpi/ic_checkin_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_icon_circle_bg.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/icon_circle_bg.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/layout_activity_mock_checkin.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/layout/activity_mock_checkin.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_bg_error_box.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/bg_error_box.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_warning.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_warning.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-hdpi_ic_time.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-hdpi/ic_time.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-anydpi-v21_ic_add_white.xml.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-anydpi-v21/ic_add_white.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_checkin_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_checkin_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xxhdpi_ic_warning.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xxhdpi/ic_warning.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_csv_import.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_csv_import.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_search_background.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/search_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-ldpi_ic_checkin_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-ldpi/ic_checkin_white.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_input_background.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/input_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_edit_text_background.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/edit_text_background.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_icon_back.png.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/icon_back.png"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable_button_danger.xml.flat",
+        "source": "com.iritech.irissample.app-main-22:/drawable/button_danger.xml"
+    },
+    {
+        "merged": "com.iritech.irissample.app-merged_res-20:/drawable-xhdpi_ic_upload_white.png.flat",
+        "source": "com.iritech.irissample.app-pngs-15:/drawable-xhdpi/ic_upload_white.png"
+    }
+]

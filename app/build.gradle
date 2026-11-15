@@ -32,6 +32,8 @@ android {
 
         // Inject Brevo SMTP config từ local.properties vào BuildConfig
         buildConfigField "String", "BREVO_SMTP_LOGIN", "\"ad41bc001@smtp-brevo.com\""
+        def brevoKey = localProperties.getProperty('BREVO_SMTP_KEY', '')
+        buildConfigField "String", "BREVO_SMTP_KEY", "\"${brevoKey}\""
 
         buildConfigField "String", "BREVO_SENDER_EMAIL", "\"phungthuan677mc@gmail.com\""
         buildConfigField "String", "BREVO_SENDER_NAME", "\"Iris Sample System\""
@@ -62,6 +64,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
 
     ndkVersion ndkVersion

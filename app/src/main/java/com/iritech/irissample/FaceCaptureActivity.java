@@ -498,8 +498,8 @@ public class FaceCaptureActivity extends AppCompatActivity
         // 3. Chống màn hình điện thoại tự phát sáng quá gắt (Backlight/Specular Glare Saturation)
         float lumaRed  = 0.299f * rRed  + 0.587f * gRed  + 0.114f * bRed;
         float lumaBlue = 0.299f * rBlue + 0.587f * gBlue + 0.114f * bBlue;
-        if (lumaRed > 232.0f && lumaBlue > 232.0f) {
-            Log.w(TAG, "Flash thất bại: Phát hiện độ chói đèn nền màn hình quá cao (Luma=" + lumaRed + ")");
+        if (lumaRed > 215.0f && lumaBlue > 215.0f) {
+            Log.w(TAG, "Flash thất bại: Phát hiện độ chói đèn nền màn hình quá cao (LumaRed=" + lumaRed + ", LumaBlue=" + lumaBlue + ")");
             return false;
         }
 
@@ -518,16 +518,15 @@ public class FaceCaptureActivity extends AppCompatActivity
         if (baseSampleCount > 0) {
             float ratioBase = rgbBaseline[0] / (rgbBaseline[2] + 1.0f);
             // Khi nháy Đỏ tỷ lệ R/B phải tăng lên so với Baseline, khi nháy Xanh phải giảm xuống so với Baseline
-            baselineSymmetric = (ratioRedInRedFlash > ratioBase + 0.015f)
-                    && (ratioRedInBlueFlash < ratioBase - 0.015f);
+            baselineSymmetric = (ratioRedInRedFlash > ratioBase + 0.035f)
+                    && (ratioRedInBlueFlash < ratioBase - 0.035f);
         }
 
-        // 6. Ngưỡng chặn Video:
-        // Vì đã lấy mẫu thuần túy bên trong vùng lõi da mặt (không bị tường phía sau làm loãng),
-        // người thật ở xa (40-50cm) vẫn đạt Shift >= 0.095f, trong khi màn hình phát video < 0.08f.
-        boolean shiftPassed = (redBlueShift >= 0.095f)
-                && (normRedShift >= 0.014f)
-                && (normBlueShift >= 0.014f)
+        // 6. Ngưỡng chặn Video Replay an toàn:
+        // Da người thật đạt Shift >= 0.35f đến 1.20f, trong khi màn hình phát video điện thoại/máy tính < 0.20f.
+        boolean shiftPassed = (redBlueShift >= 0.280f)
+                && (normRedShift >= 0.040f)
+                && (normBlueShift >= 0.040f)
                 && baselineSymmetric;
 
         Log.d(TAG, String.format(
