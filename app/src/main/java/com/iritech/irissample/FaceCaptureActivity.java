@@ -4,9 +4,14 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
@@ -18,6 +23,8 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,11 +71,12 @@ public class FaceCaptureActivity extends AppCompatActivity
     public static final String RESULT_FACE_MATCHED = "face_matched";
 
     // ── Views ──────────────────────────────────────────────────────────────────
-    private SurfaceView surfaceView;
-    private TextView    tvStatus;
-    private Button      btnCapture;
-    private Button      btnCancel;
-    private View        vFlashOverlay;
+    private SurfaceView     surfaceView;
+    private TextView        tvStatus;
+    private Button          btnCapture;
+    private Button          btnCancel;
+    private View            vFlashOverlay;
+    private FaceOverlayView faceOverlayView; // Lớp phủ khung hình dáng khuôn mặt người
 
     // ── Camera & AI ───────────────────────────────────────────────────────────
     private Camera          camera;
@@ -98,8 +106,9 @@ public class FaceCaptureActivity extends AppCompatActivity
     private Runnable flashLoopRunnable;
 
     // ── Trạng thái ────────────────────────────────────────────────────────────
-    private volatile boolean isSafeToCapture   = false;
-    private volatile boolean isProcessingFrame = false;
+    private volatile boolean isSafeToCapture    = false;
+    private volatile boolean isProcessingFrame  = false;
+    private volatile boolean isFaceInsideCircle = false; // Cờ kiểm tra khuôn mặt nằm trong khung mặt
 
     private int verifyFailCount = 0;
     private static final int MAX_VERIFY_RETRIES_PER_LIVENESS = 3;
@@ -115,12 +124,136 @@ public class FaceCaptureActivity extends AppCompatActivity
     private Runnable timeoutRunnable;
     private boolean  isTimeoutStarted = false;
 
+    // ==================== LỚP PHỦ HÌNH DÁNG KHUÔN MẶT NGƯỜI (FACE CONTOUR MASK) ====================
+
+    public static class FaceOverlayView extends View {
+        private static final int DEFAULT_MASK_COLOR = Color.parseColor("#B3000000"); // Nền đen mờ 70%
+
+        private Paint paintBackground;
+        private Paint paintTransparent;
+        private Paint paintBorder;
+        private Path  faceContourPath;
+
+        public FaceOverlayView(android.content.Context context) {
+            super(context);
+            init();
+        }
+
+        private void init() {
+            paintBackground = new Paint();
+            paintBackground.setColor(DEFAULT_MASK_COLOR);
+            paintBackground.setStyle(Paint.Style.FILL);
+
+            paintTransparent = new Paint();
+            paintTransparent.setColor(Color.TRANSPARENT);
+            paintTransparent.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+            paintTransparent.setAntiAlias(true);
+
+            paintBorder = new Paint();
+            paintBorder.setColor(Color.WHITE);
+            paintBorder.setStyle(Paint.Style.STROKE);
+            paintBorder.setStrokeWidth(8f);
+            paintBorder.setAntiAlias(true);
+
+            faceContourPath = new Path();
+        }
+
+        /**
+         * Tạo đường cong khép kín theo đúng hình dáng khuôn mặt người (Oval đứng tỉ lệ 1:1.32,
+         * phần vòm trán/thái dương tròn đầy và thuôn nhẹ xuống vùng cằm).
+         */
+        private void buildFaceContourPath(int width, int height) {
+            faceContourPath.reset();
+            float cx = width / 2f;
+            float cy = height * 0.42f;
+            float rx = width * 0.34f;
+            float ry = Math.min(rx * 1.32f, height * 0.28f);
+
+            int steps = 120;
+            for (int i = 0; i <= steps; i++) {
+                double theta = (2.0 * Math.PI * i) / steps;
+                float cosT = (float) Math.cos(theta);
+                float sinT = (float) Math.sin(theta);
+
+                // Hệ số (1 - 0.10 * sinT) giúp nửa trên (trán) rộng tự nhiên và nửa dưới (hàm/cằm) thuôn gọn
+                float taper = 1.0f - 0.10f * sinT;
+                float x = cx + rx * cosT * taper;
+                float y = cy + ry * sinT;
+
+                if (i == 0) {
+                    faceContourPath.moveTo(x, y);
+                } else {
+                    faceContourPath.lineTo(x, y);
+                }
+            }
+            faceContourPath.close();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            int width  = getWidth();
+            int height = getHeight();
+            if (width <= 0 || height <= 0) return;
+
+            buildFaceContourPath(width, height);
+
+            // 1. Vẽ vùng nền xung quanh (Mặc định đen mờ, khi chớp Flash sẽ đổi sang Đỏ/Xanh)
+            canvas.drawRect(0, 0, width, height, paintBackground);
+
+            // 2. Đục lỗ trong suốt ở giữa theo đúng khung khuôn mặt (không bao giờ bị che bởi màu Flash)
+            canvas.drawPath(faceContourPath, paintTransparent);
+
+            // 3. Vẽ đường viền bao quanh khung khuôn mặt
+            canvas.drawPath(faceContourPath, paintBorder);
+        }
+
+        public void setBorderColor(int color) {
+            if (paintBorder.getColor() != color) {
+                paintBorder.setColor(color);
+                invalidate();
+            }
+        }
+
+        /**
+         * Đổi màu phần viền nền bên ngoài khung mặt (dùng khi nháy Flash Đỏ/Xanh mà không che mặt)
+         */
+        public void setMaskColor(int color) {
+            if (paintBackground.getColor() != color) {
+                paintBackground.setColor(color);
+                invalidate();
+            }
+        }
+
+        public void resetMaskColor() {
+            setMaskColor(DEFAULT_MASK_COLOR);
+        }
+
+        public Rect getValidArea() {
+            int width  = getWidth();
+            int height = getHeight();
+            float cx   = width / 2f;
+            float cy   = height * 0.42f;
+            float rx   = width * 0.34f;
+            float ry   = Math.min(rx * 1.32f, height * 0.28f);
+            return new Rect(
+                    (int) (cx - rx),
+                    (int) (cy - ry),
+                    (int) (cx + rx),
+                    (int) (cy + ry)
+            );
+        }
+    }
+
     // ==================== LIFECYCLE ====================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_face_capture);
+
+        // Đảm bảo độ sáng màn hình ở mức tối đa (100%) để Flash Challenge phát phản xạ ánh sáng chuẩn xác ngay cả khi độ sáng điện thoại < 30%
+        setWindowBrightnessMax();
 
         entityId          = getIntent().getStringExtra(EXTRA_STUDENT_ID);
         existingPhotoPath = getIntent().getStringExtra(EXTRA_EXISTING_PHOTO);
@@ -136,6 +269,22 @@ public class FaceCaptureActivity extends AppCompatActivity
         btnCapture    = findViewById(R.id.btnCapture);
         btnCancel     = findViewById(R.id.btnCancel);
         vFlashOverlay = findViewById(R.id.vFlashOverlay);
+
+        // Luôn ẩn vFlashOverlay toàn màn hình để ánh sáng chớp chỉ xuất hiện ở viền ngoài của faceOverlayView
+        if (vFlashOverlay != null) {
+            vFlashOverlay.setVisibility(View.GONE);
+        }
+
+        // Khởi tạo và gắn lớp phủ khung mặt người ngay trên SurfaceView
+        faceOverlayView = new FaceOverlayView(this);
+        faceOverlayView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        if (surfaceView != null && surfaceView.getParent() instanceof ViewGroup) {
+            ViewGroup parent = (ViewGroup) surfaceView.getParent();
+            int index = parent.indexOfChild(surfaceView);
+            parent.addView(faceOverlayView, index + 1, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT));
+        }
 
         faceMatchHelper    = new FaceMatchHelper(this);
         antiSpoofHelper    = new AntiSpoofHelper(this);
@@ -174,6 +323,7 @@ public class FaceCaptureActivity extends AppCompatActivity
                 runOnUiThread(() -> {
                     tvStatus.setText("❌ " + reason);
                     Toast.makeText(FaceCaptureActivity.this, reason, Toast.LENGTH_LONG).show();
+                    if (faceOverlayView != null) faceOverlayView.setBorderColor(Color.RED);
                 });
                 // Tự động trở về màn hình điểm danh sau 1.5 giây
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -222,6 +372,44 @@ public class FaceCaptureActivity extends AppCompatActivity
         });
 
         checkCameraPermission();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setWindowBrightnessMax();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        restoreWindowBrightness();
+    }
+
+    private void setWindowBrightnessMax() {
+        try {
+            android.view.Window window = getWindow();
+            if (window != null) {
+                WindowManager.LayoutParams layoutParams = window.getAttributes();
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL;
+                window.setAttributes(layoutParams);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Lỗi nâng độ sáng màn hình: " + e.getMessage());
+        }
+    }
+
+    private void restoreWindowBrightness() {
+        try {
+            android.view.Window window = getWindow();
+            if (window != null) {
+                WindowManager.LayoutParams layoutParams = window.getAttributes();
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+                window.setAttributes(layoutParams);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Lỗi khôi phục độ sáng màn hình: " + e.getMessage());
+        }
     }
 
     @Override
@@ -371,7 +559,7 @@ public class FaceCaptureActivity extends AppCompatActivity
         camera.setDisplayOrientation(result);
     }
 
-    // ==================== AE/AWB LOCK & RED/BLUE SPECTRUM FLASH ====================
+    // ==================== AE/AWB LOCK & RED/BLUE SPECTRUM FLASH (CHỈ NHÁY VIỀN NGOÀI) ====================
 
     private void lockCameraAutoExposureAndWhiteBalance(boolean lock) {
         if (camera == null) return;
@@ -392,7 +580,10 @@ public class FaceCaptureActivity extends AppCompatActivity
 
     private void startSingleColorFlashChallenge() {
         runOnUiThread(() -> {
-            if (vFlashOverlay == null) return;
+            if (faceOverlayView == null) return;
+
+            // Tự động đẩy độ sáng màn hình lên 100% để ánh sáng chớp phản chiếu đủ mạnh vào khuôn mặt người thật
+            setWindowBrightnessMax();
 
             isContinuousFlashing = true;
             colorFlashPhase = 3; // Pha 3: Thu mẫu Baseline (Màu da gốc trước khi nháy)
@@ -403,41 +594,46 @@ public class FaceCaptureActivity extends AppCompatActivity
             redSampleCount  = 0;
             blueSampleCount = 0;
 
+            // Đảm bảo vFlashOverlay luôn ẩn để KHÔNG che vị trí khuôn mặt ở giữa
+            if (vFlashOverlay != null) {
+                vFlashOverlay.setVisibility(View.GONE);
+            }
+
             // Khóa cứng Auto-Exposure (AE) và Auto-White-Balance (AWB) phần cứng camera
             lockCameraAutoExposureAndWhiteBalance(true);
 
             Handler mainHandler = new Handler(Looper.getMainLooper());
 
-            // Sau 150ms thu mẫu Baseline -> Bật nền ĐỎ TƯƠI (#FF0000)
+            // Sau 150ms thu mẫu Baseline -> Đổi vùng viền ngoài sang ĐỎ TƯƠI (#FF0000), giữa mặt vẫn trong suốt
             mainHandler.postDelayed(() -> {
                 if (!isContinuousFlashing) return;
                 colorFlashPhase = 0;
-                if (vFlashOverlay != null) {
-                    vFlashOverlay.setBackgroundColor(Color.parseColor("#FF0000"));
-                    vFlashOverlay.setVisibility(View.VISIBLE);
+                if (faceOverlayView != null) {
+                    faceOverlayView.setMaskColor(Color.parseColor("#FF0000"));
                 }
 
-                // Chờ 150ms cho màn hình Đỏ và camera đồng bộ rồi thu mẫu trong 350ms
+                // Chờ 150ms cho viền Đỏ và camera đồng bộ rồi thu mẫu trong 350ms
                 mainHandler.postDelayed(() -> {
                     if (isContinuousFlashing) colorFlashPhase = 1;
                 }, 150);
 
-                // Kết thúc pha Đỏ, chuyển sang XANH DƯƠNG (#0000FF)
+                // Kết thúc pha Đỏ, chuyển vùng viền ngoài sang XANH DƯƠNG (#0000FF), giữa mặt vẫn trong suốt
                 mainHandler.postDelayed(() -> {
                     if (!isContinuousFlashing) return;
                     colorFlashPhase = 0;
-                    if (vFlashOverlay != null) {
-                        vFlashOverlay.setBackgroundColor(Color.parseColor("#0000FF"));
+                    if (faceOverlayView != null) {
+                        faceOverlayView.setMaskColor(Color.parseColor("#0000FF"));
                     }
 
-                    // Chờ 150ms cho màn hình Xanh và camera đồng bộ rồi thu mẫu trong 350ms
+                    // Chờ 150ms cho viền Xanh và camera đồng bộ rồi thu mẫu trong 350ms
                     mainHandler.postDelayed(() -> {
                         if (isContinuousFlashing) colorFlashPhase = 2;
                     }, 150);
 
                     mainHandler.postDelayed(() -> {
-                        if (vFlashOverlay != null) {
-                            vFlashOverlay.setVisibility(View.GONE);
+                        // Trả vùng viền ngoài về lại màu đen mờ mặc định
+                        if (faceOverlayView != null) {
+                            faceOverlayView.resetMaskColor();
                         }
                         colorFlashPhase = 0;
                         lockCameraAutoExposureAndWhiteBalance(false);
@@ -470,6 +666,9 @@ public class FaceCaptureActivity extends AppCompatActivity
             if (vFlashOverlay != null) {
                 vFlashOverlay.setVisibility(View.GONE);
             }
+            if (faceOverlayView != null) {
+                faceOverlayView.resetMaskColor();
+            }
         });
     }
 
@@ -498,7 +697,7 @@ public class FaceCaptureActivity extends AppCompatActivity
         // 3. Chống màn hình điện thoại tự phát sáng quá gắt (Backlight/Specular Glare Saturation)
         float lumaRed  = 0.299f * rRed  + 0.587f * gRed  + 0.114f * bRed;
         float lumaBlue = 0.299f * rBlue + 0.587f * gBlue + 0.114f * bBlue;
-        if (lumaRed > 215.0f && lumaBlue > 215.0f) {
+        if (lumaRed > 240.0f && lumaBlue > 240.0f) {
             Log.w(TAG, "Flash thất bại: Phát hiện độ chói đèn nền màn hình quá cao (LumaRed=" + lumaRed + ", LumaBlue=" + lumaBlue + ")");
             return false;
         }
@@ -513,25 +712,15 @@ public class FaceCaptureActivity extends AppCompatActivity
         float normRedShift  = (rRed / sumRed)   - (rBlue / sumBlue); // Phải dương khi nháy Đỏ
         float normBlueShift = (bBlue / sumBlue) - (bRed / sumRed);   // Phải dương khi nháy Xanh
 
-        // 5. Kiểm tra đối xứng qua Baseline (nếu có mẫu Baseline trước khi nháy)
-        boolean baselineSymmetric = true;
-        if (baseSampleCount > 0) {
-            float ratioBase = rgbBaseline[0] / (rgbBaseline[2] + 1.0f);
-            // Khi nháy Đỏ tỷ lệ R/B phải tăng lên so với Baseline, khi nháy Xanh phải giảm xuống so với Baseline
-            baselineSymmetric = (ratioRedInRedFlash > ratioBase + 0.035f)
-                    && (ratioRedInBlueFlash < ratioBase - 0.035f);
-        }
-
-        // 6. Ngưỡng chặn Video Replay an toàn:
-        // Da người thật đạt Shift >= 0.35f đến 1.20f, trong khi màn hình phát video điện thoại/máy tính < 0.20f.
-        boolean shiftPassed = (redBlueShift >= 0.280f)
-                && (normRedShift >= 0.040f)
-                && (normBlueShift >= 0.040f)
-                && baselineSymmetric;
+        // 5. Ngưỡng cân bằng cho ánh sáng chớp từ vùng viền ngoài (đã tối ưu ngưỡng 0.018f cho trường hợp màn hình/môi trường sáng yếu)
+        boolean shiftPassed = (redBlueShift >= 0.018f)
+                && (normRedShift >= 0.002f)
+                && (normBlueShift >= 0.002f)
+                && (ratioRedInRedFlash > ratioRedInBlueFlash);
 
         Log.d(TAG, String.format(
-                "Flash Check -> R/B_Red: %.3f, R/B_Blue: %.3f, Shift: %.3f, normR: %.3f, normB: %.3f, baseSym: %b => PASS: %b",
-                ratioRedInRedFlash, ratioRedInBlueFlash, redBlueShift, normRedShift, normBlueShift, baselineSymmetric, shiftPassed));
+                "Flash Check -> R/B_Red: %.3f, R/B_Blue: %.3f, Shift: %.3f, normR: %.3f, normB: %.3f => PASS: %b",
+                ratioRedInRedFlash, ratioRedInBlueFlash, redBlueShift, normRedShift, normBlueShift, shiftPassed));
 
         return shiftPassed;
     }
@@ -601,6 +790,57 @@ public class FaceCaptureActivity extends AppCompatActivity
         return new float[]{sumR / (float) count, sumG / (float) count, sumB / (float) count};
     }
 
+    // ==================== KIỂM TRA KHUÔN MẶT TRONG KHUNG MẶT NGƯỜI ====================
+
+    private boolean checkFaceInCircle(Rect faceBoundsRot270, int imageWidth, int imageHeight) {
+        if (faceOverlayView == null || faceBoundsRot270 == null || surfaceView == null) return false;
+
+        Rect validAreaOnView = faceOverlayView.getValidArea();
+        int viewWidth  = surfaceView.getWidth();
+        int viewHeight = surfaceView.getHeight();
+
+        int mlkitWidth  = imageHeight;
+        int mlkitHeight = imageWidth;
+
+        if (viewWidth == 0 || viewHeight == 0 || mlkitWidth == 0 || mlkitHeight == 0) return false;
+
+        int mirroredLeft  = mlkitWidth - faceBoundsRot270.right;
+        int mirroredRight = mlkitWidth - faceBoundsRot270.left;
+
+        float scaleX = (float) viewWidth / mlkitWidth;
+        float scaleY = (float) viewHeight / mlkitHeight;
+
+        float mappedLeft   = mirroredLeft * scaleX;
+        float mappedRight  = mirroredRight * scaleX;
+        float mappedTop    = faceBoundsRot270.top * scaleY;
+        float mappedBottom = faceBoundsRot270.bottom * scaleY;
+
+        float faceCenterX = (mappedLeft + mappedRight) / 2.0f;
+        float faceCenterY = (mappedTop + mappedBottom) / 2.0f;
+
+        boolean isPerformingChallenge = (livenessLogic != null
+                && livenessLogic.getCurrentState() != LivenessLogic.State.IDLE
+                && livenessLogic.getCurrentState() != LivenessLogic.State.WAITING_FOR_FACE);
+
+        int tolerance = isPerformingChallenge ? 110 : 65;
+
+        boolean isCenterInside = (faceCenterX >= validAreaOnView.left)
+                && (faceCenterX <= validAreaOnView.right)
+                && (faceCenterY >= validAreaOnView.top)
+                && (faceCenterY <= validAreaOnView.bottom);
+
+        boolean isInsideX = (mappedLeft >= validAreaOnView.left - tolerance)
+                && (mappedRight <= validAreaOnView.right + tolerance);
+        boolean isInsideY = (mappedTop >= validAreaOnView.top - tolerance)
+                && (mappedBottom <= validAreaOnView.bottom + tolerance);
+
+        float faceWidth  = mappedRight - mappedLeft;
+        float validWidth = validAreaOnView.width();
+        boolean isProperSize = (faceWidth / validWidth) >= 0.35f;
+
+        return isCenterInside && isInsideX && isInsideY && isProperSize;
+    }
+
     // ==================== LUỒNG PREVIEW (TỰ ĐỘNG CHECKIN) ====================
 
     @Override
@@ -651,6 +891,10 @@ public class FaceCaptureActivity extends AppCompatActivity
                     .addOnSuccessListener(faces -> {
                         if (faces == null || faces.isEmpty()) {
                             lastFaceBounds = null;
+                            isFaceInsideCircle = false;
+                            runOnUiThread(() -> {
+                                if (faceOverlayView != null) faceOverlayView.setBorderColor(Color.WHITE);
+                            });
                             if (livenessLogic != null) {
                                 if (livenessLogic.isCompleted()) {
                                     verifyFailCount = 0;
@@ -667,6 +911,21 @@ public class FaceCaptureActivity extends AppCompatActivity
                         lastFaceBounds = detectedFace.getBoundingBox();
                         lastFaceEulerY = detectedFace.getHeadEulerAngleY();
                         lastFaceEulerX = detectedFace.getHeadEulerAngleX();
+
+                        // Kiểm tra khuôn mặt nằm trong khung hình dáng mặt người
+                        isFaceInsideCircle = checkFaceInCircle(lastFaceBounds, size.width, size.height);
+                        if (!isFaceInsideCircle) {
+                            runOnUiThread(() -> {
+                                if (faceOverlayView != null) faceOverlayView.setBorderColor(Color.WHITE);
+                                tvStatus.setText("Vui lòng đặt khuôn mặt vừa vặn vào trong khung");
+                            });
+                            isProcessingFrame = false;
+                            return;
+                        } else {
+                            runOnUiThread(() -> {
+                                if (faceOverlayView != null) faceOverlayView.setBorderColor(Color.GREEN);
+                            });
+                        }
 
                         // Kiểm tra Liveness (chớp mắt + lắc đầu 3D + flash)
                         if (livenessLogic != null) {

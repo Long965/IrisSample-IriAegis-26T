@@ -221,13 +221,13 @@ public class LivenessLogic {
             if (isStatic) {
                 consecutiveStaticFrames++;
                 if (consecutiveStaticFrames >= MAX_STATIC_FRAMES_ALLOWED) {
-                    fail("Phát hiện gián đoạn chuyển động (Video bị đứng hình)!");
+                    fail("Phát hiện gián đoạn chuyển động!");
                     return;
                 }
             } else {
                 // Video đã đứng hình >= 18 frame (~0.6s) rồi đột ngột tiếp tục chuyển động
                 if (consecutiveStaticFrames >= FREEZE_RESUME_STATIC_FRAMES) {
-                    fail("Phát hiện gián đoạn chuyển động (Video đứng hình rồi tiếp tục phát)!");
+                    fail("Phát hiện gián đoạn chuyển động!");
                     return;
                 }
                 consecutiveStaticFrames = 0;
@@ -242,7 +242,7 @@ public class LivenessLogic {
                 float allowedMaxYaw = isShakingHead ? 50.0f : MAX_FRAME_YAW_DELTA_NORMAL;
 
                 if (dY > allowedMaxYaw || dX > MAX_FRAME_PITCH_ROLL_DELTA || dZ > MAX_FRAME_PITCH_ROLL_DELTA) {
-                    fail("Phát hiện chuỗi chuyển động bất thường (Video bị cắt ghép)!");
+                    fail("Phát hiện chuỗi chuyển động bất thường !");
                     return;
                 }
             }
@@ -276,7 +276,7 @@ public class LivenessLogic {
                 }
                 return "Bước 2/3: Vui lòng quay sang trái & quay sang phải";
             case FLASH_CHALLENGE:
-                return "Bước 3/3: Giữ thẳng mặt - Đang kiểm tra ánh sáng...";
+                return "Bước 3/3: Vui lòng nhìn thẳng";
             default:
                 return "";
         }
@@ -394,7 +394,7 @@ public class LivenessLogic {
 
                     // Nếu tư thế đầu giữa lúc nhắm mắt và khi mở mắt bị nhảy lệch mạnh > 15.0 độ -> Video bị cắt ghép!
                     if (dy > 15.0f || dx > 15.0f || dz > 15.0f) {
-                        fail("Phát hiện chuỗi chuyển động bất thường (Hành động chớp mắt bị cắt ghép)!");
+                        fail("Phát hiện chuỗi chuyển động bất thường!");
                         return;
                     }
                 }
@@ -417,7 +417,7 @@ public class LivenessLogic {
         // Yêu cầu quay cả 2 hướng + Có biến thiên thị sai 3D hợp lệ
         if (hasTurnedLeft && hasTurnedRight) {
             if (!has3DPerspectiveShift) {
-                notifyInstruction("⚠️ Hãy lắc đầu thật (Phát hiện màn hình phẳng 2D)");
+                notifyInstruction("⚠️ Hãy lắc đầu nào");
                 return;
             }
 
@@ -436,7 +436,7 @@ public class LivenessLogic {
     }
 
     private void triggerFlashChallenge() {
-        changeState(State.FLASH_CHALLENGE, "Bước 3/3: Giữ thẳng mặt - Đang kiểm tra ánh sáng...");
+        changeState(State.FLASH_CHALLENGE, "Bước 3/3: Giữ thẳng mặt");
         if (listener != null) {
             listener.onRequestFlashChallenge();
         }
@@ -448,12 +448,12 @@ public class LivenessLogic {
         if (success) {
             hasFlashPassed = true;
             stopTimeoutTimer();
-            changeState(State.COMPLETED, "Xác thực Liveness thành công!");
+            changeState(State.COMPLETED, "Xác thực thành công!");
             if (listener != null) {
                 listener.onLivenessCompleted();
             }
         } else {
-            fail("Phát hiện video giả mạo! Màn hình không phản chiếu ánh sáng (Shift: " + String.format("%.3f", lumaShift) + ")");
+            fail("Phát hiện video giả mạo!");
         }
     }
 
@@ -480,7 +480,7 @@ public class LivenessLogic {
 
     private void startTimeoutTimer() {
         stopTimeoutTimer();
-        timeoutRunnable = () -> fail("Hết thời gian xác thực (Timeout)");
+        timeoutRunnable = () -> fail("Hết thời gian xác thực");
         if (mainHandler != null) {
             mainHandler.postDelayed(timeoutRunnable, timeoutMs);
         }
