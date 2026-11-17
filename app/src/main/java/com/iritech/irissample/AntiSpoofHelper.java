@@ -24,7 +24,7 @@ public class AntiSpoofHelper {
 
     public static final String MODEL_FILE = "minivision_anti_spoof.tflite";
 
-    // Ngưỡng xác suất đánh giá người thật (Mặc định >= 0.50 là người thật)
+    // Ngưỡng xác suất đánh giá người thật (Mặc định >= 0.50f là người thật)
     private static final float REAL_THRESHOLD = 0.50f;
 
     private Interpreter tflite;
@@ -164,24 +164,24 @@ public class AntiSpoofHelper {
             }
 
             if (isNCHW) {
-                // Định dạng PyTorch [1, 3, H, W]
+                // Định dạng PyTorch [1, 3, H, W] - Hệ màu BGR, dải [0.0f, 255.0f]
                 for (int c = 0; c < 3; c++) {
                     for (int i = 0; i < intValues.length; i++) {
                         int val = intValues[i];
                         float color;
-                        if (c == 0)      color = (((val >> 16) & 0xFF) - 127.5f) / 128.0f;
-                        else if (c == 1) color = (((val >> 8)  & 0xFF) - 127.5f) / 128.0f;
-                        else             color = ((val & 0xFF)         - 127.5f) / 128.0f;
+                        if (c == 0)      color = (float) (val & 0xFF);         // Kênh B (Blue)
+                        else if (c == 1) color = (float) ((val >> 8) & 0xFF);  // Kênh G (Green)
+                        else             color = (float) ((val >> 16) & 0xFF); // Kênh R (Red)
                         imgData.putFloat(color);
                     }
                 }
             } else {
-                // Định dạng TensorFlow [1, H, W, 3]
+                // Định dạng NHWC [1, H, W, 3] - Hệ màu BGR, dải [0.0f, 255.0f]
                 for (int i = 0; i < intValues.length; i++) {
                     int val = intValues[i];
-                    imgData.putFloat((((val >> 16) & 0xFF) - 127.5f) / 128.0f);
-                    imgData.putFloat((((val >> 8)  & 0xFF) - 127.5f) / 128.0f);
-                    imgData.putFloat(((val & 0xFF)         - 127.5f) / 128.0f);
+                    imgData.putFloat((float) (val & 0xFF));         // B
+                    imgData.putFloat((float) ((val >> 8) & 0xFF));  // G
+                    imgData.putFloat((float) ((val >> 16) & 0xFF)); // R
                 }
             }
 
@@ -199,14 +199,10 @@ public class AntiSpoofHelper {
             float spoofScore;
 
             if (outputClassCount == 3) {
-                // Chuẩn MiniVision Silent-Face-Anti-Spoofing:
-                // Index 0: Fake Paper/Photo
-                // Index 1: REAL PERSON (Người thật)
-                // Index 2: Fake Screen/Video Replay
+                // Chuẩn MiniVision Silent-Face-Anti-Spoofing: Class 1 luôn là REAL PERSON (Người thật)
                 realScore  = probs[1];
-                spoofScore = Math.max(probs[0], probs[2]);
+                spoofScore = probs[0] + probs[2];
             } else {
-                // 2 classes: Index 1 = Real, Index 0 = Fake
                 realScore  = probs[1];
                 spoofScore = probs[0];
             }

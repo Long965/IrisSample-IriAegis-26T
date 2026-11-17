@@ -390,8 +390,9 @@ public class FaceCaptureActivity extends AppCompatActivity
         try {
             android.view.Window window = getWindow();
             if (window != null) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 WindowManager.LayoutParams layoutParams = window.getAttributes();
-                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL;
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL; // 1.0f (100% độ sáng màn hình tối đa)
                 window.setAttributes(layoutParams);
             }
         } catch (Exception e) {
@@ -712,11 +713,23 @@ public class FaceCaptureActivity extends AppCompatActivity
         float normRedShift  = (rRed / sumRed)   - (rBlue / sumBlue); // Phải dương khi nháy Đỏ
         float normBlueShift = (bBlue / sumBlue) - (bRed / sumRed);   // Phải dương khi nháy Xanh
 
-        // 5. Ngưỡng cân bằng cho ánh sáng chớp từ vùng viền ngoài (đã tối ưu ngưỡng 0.018f cho trường hợp màn hình/môi trường sáng yếu)
-        boolean shiftPassed = (redBlueShift >= 0.018f)
-                && (normRedShift >= 0.002f)
-                && (normBlueShift >= 0.002f)
-                && (ratioRedInRedFlash > ratioRedInBlueFlash);
+        // 5. So sánh sự thay đổi màu sắc thực tế so với màu da Baseline trước khi nháy Flash
+        boolean baseCheckPassed = true;
+        if (baseSampleCount > 0) {
+            float rBase = rgbBaseline[0];
+            float bBase = rgbBaseline[2];
+            // Kênh Red phải tăng khi chớp Đỏ, kênh Blue phải tăng khi chớp Xanh so với Baseline da gốc
+            float redGainFromBase  = rRed - rBase;
+            float blueGainFromBase = bBlue - bBase;
+            baseCheckPassed = (redGainFromBase >= -2.0f) && (blueGainFromBase >= -2.0f);
+        }
+
+        // 6. Ngưỡng an toàn thực tế khi nháy viền ngoài (redBlueShift >= 0.008f và normShift >= 0.0010f)
+        boolean shiftPassed = (redBlueShift >= 0.008f)
+                && (normRedShift >= 0.0010f)
+                && (normBlueShift >= 0.0010f)
+                && (ratioRedInRedFlash > ratioRedInBlueFlash)
+                && baseCheckPassed;
 
         Log.d(TAG, String.format(
                 "Flash Check -> R/B_Red: %.3f, R/B_Blue: %.3f, Shift: %.3f, normR: %.3f, normB: %.3f => PASS: %b",
@@ -981,10 +994,10 @@ public class FaceCaptureActivity extends AppCompatActivity
                                 int tw = Math.min(bounds.width(),  rotatedBitmap.getWidth()  - tx);
                                 int th = Math.min(bounds.height(), rotatedBitmap.getHeight() - ty);
 
-                                // 2. Cắt rộng (Expanded Crop 2.5x) đúng tâm đã lật gương cho MiniVision AI Anti-Spoofing
+                                // 2. Cắt rộng (Expanded Crop 2.7x) đúng tâm đã lật gương cho MiniVision AI Anti-Spoofing
                                 int centerX = rotatedBitmap.getWidth() - bounds.centerX();
                                 int centerY = bounds.centerY();
-                                int maxDim  = (int) (Math.max(bounds.width(), bounds.height()) * 2.5f / 2.0f);
+                                int maxDim  = (int) (Math.max(bounds.width(), bounds.height()) * 2.7f / 2.0f);
 
                                 int ex = Math.max(0, centerX - maxDim);
                                 int ey = Math.max(0, centerY - maxDim);
