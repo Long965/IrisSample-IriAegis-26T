@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liveness Detection System (1:1 Android Architecture)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+<header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-xl">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+            <h1 class="text-lg font-bold text-white">Hệ thống Liveness Detection Web</h1>
+            <p class="text-[11px] text-slate-400">Chuẩn hóa 1:1 từ Android (3D Parallax + Freeze/Cut Detection + Edge Flash + MiniVision AI)</p>
+        </div>
+    </div>
+    <div class="flex items-center space-x-3">
+            <span class="px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                ● MiniVision TFLite + MediaPipe Ready
+            </span>
+    </div>
+</header>
+
+<main class="flex-1 container mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Cột Trái: Camera & Khung Oval đục lỗ trong suốt -->
+    <div class="lg:col-span-7 flex flex-col items-center space-y-4">
+        <div id="camera-card" class="relative w-full max-w-lg aspect-[4/3] bg-black rounded-3xl overflow-hidden border-2 border-slate-800 shadow-2xl flex items-center justify-center">
+            <video id="webcam" class="w-full h-full object-cover transform -scale-x-100" autoplay playsinline muted></video>
+            <canvas id="canvas-hidden" class="hidden"></canvas>
+
+            <!-- Khung Oval đục lỗ ở giữa: Viền ngoài đổi sang Đỏ/Xanh khi Flash, giữa mặt luôn trong suốt -->
+            <div class="absolute inset-0 pointer-events-none z-20 flex items-center justify-center overflow-hidden">
+                <div id="face-oval-ring" class="w-56 h-72 rounded-[50%] border-4 border-white transition-colors duration-100"
+                     style="box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.70);">
+                </div>
+            </div>
+
+            <!-- Thanh trạng thái -->
+            <div class="absolute bottom-4 left-4 right-4 z-40">
+                <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700 text-center py-3 px-4 rounded-2xl">
+                    <p id="instruction-text" class="text-sm font-semibold text-indigo-200">
+                        Chọn đối tượng và nhấn Bắt đầu để kiểm tra Liveness
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nút điều khiển 2 chế độ giống Android (MODE_CHECKIN & MODE_REGISTER) + Tải ảnh lên từ Máy tính -->
+        <div class="w-full max-w-lg flex gap-2">
+            <button id="btn-checkin" onclick="startCheckinMode()" class="flex-1 py-3 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl transition flex items-center justify-center gap-1.5 text-xs">
+                <i class="fa-solid fa-user-check"></i> Check-in Liveness
+            </button>
+            <button id="btn-register" onclick="captureRegisterMode()" class="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl transition flex items-center justify-center gap-1.5 text-xs">
+                <i class="fa-solid fa-camera"></i> Chụp Đăng ký
+            </button>
+            <button onclick="document.getElementById('file-upload-input').click()" class="py-3 px-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-2xl transition flex items-center justify-center gap-1.5 text-xs">
+                <i class="fa-solid fa-upload"></i> Tải ảnh lên
+            </button>
+            <input type="file" id="file-upload-input" accept="image/*" class="hidden" onchange="uploadStudentPhotoFile(this)">
+            <button onclick="resetLivenessState()" class="py-3 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl border border-slate-700">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Cột Phải: Đối tượng, Tiến trình & Lịch sử -->
+    <div class="lg:col-span-5 flex flex-col space-y-4">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-4">
+            <label class="text-xs font-semibold text-slate-400 uppercase block mb-2">Đối tượng xác thực (Students / Admins)</label>
+            <select id="user-select" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-3 text-white font-medium focus:outline-none focus:border-indigo-500"></select>
+        </div>
+
+        <!-- Tiến trình 4 lớp bảo mật chuẩn Android -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-4">
+            <h3 class="text-xs font-semibold text-slate-400 uppercase mb-3">Luồng xác thực đa tầng (Android LivenessLogic)</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <div id="step-1" class="step-item p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-slate-400 flex flex-col">
+                    <span class="text-[11px] font-semibold">1. Định vị khung mặt</span>
+                    <span class="step-status text-[10px] text-slate-500 mt-1">Chờ...</span>
+                </div>
+                <div id="step-2" class="step-item p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-slate-400 flex flex-col">
+                    <span class="text-[11px] font-semibold">2. Chớp mắt tự nhiên</span>
+                    <span class="step-status text-[10px] text-slate-500 mt-1">Chờ...</span>
+                </div>
+                <div id="step-3" class="step-item p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-slate-400 flex flex-col">
+                    <span class="text-[11px] font-semibold">3. Lắc đầu & Thị sai 3D</span>
+                    <span class="step-status text-[10px] text-slate-500 mt-1">Chờ...</span>
+                </div>
+                <div id="step-4" class="step-item p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-slate-400 flex flex-col">
+                    <span class="text-[11px] font-semibold">4. Flash + MiniVision AI</span>
+                    <span class="step-status text-[10px] text-slate-500 mt-1">Chờ...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nhật ký xác thực -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-4 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase">Lịch sử Xác thực Liveness</h3>
+                <button onclick="fetchLogs()" class="text-xs text-indigo-400 hover:underline">Làm mới</button>
+            </div>
+            <div class="flex-1 bg-slate-950 border border-slate-800 rounded-2xl p-2 overflow-y-auto max-h-60">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                    <tr class="border-b border-slate-800 text-[10px] text-slate-400 uppercase">
+                        <th class="p-2">Đối tượng</th>
+                        <th class="p-2">Trạng thái</th>
+                        <th class="p-2 text-right">Real / Shift</th>
+                    </tr>
+                    </thead>
+                    <tbody id="logs-table-body" class="text-xs font-mono"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/static/js/liveness.js"></script>
+</body>
+</html>

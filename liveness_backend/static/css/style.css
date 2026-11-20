@@ -1,0 +1,42 @@
+.step-item.active {
+    background-color: rgba(79, 70, 229, 0.2);
+    border-color: rgba(99, 102, 241, 0.6);
+    color: #ffffff;
+}
+
+.step-item.completed {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #34d399;
+}
+
+.step-item.failed {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #f87171;
+}
+
+/* Mặc định nền ngoài đen mờ 70%, lỗ Oval ở giữa trong suốt 100% */
+#face-oval-ring {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.70);
+}
+
+#face-oval-ring.valid {
+    border-color: #22c55e !important;
+}
+
+#face-oval-ring.invalid {
+    border-color: #ef4444 !important;
+}
+
+/* Chớp ĐỎ ở phần nền viền ngoài, lỗ ở giữa khuôn mặt vẫn hoàn toàn trong suốt giống Android */
+#face-oval-ring.flashing-red {
+    border-color: #ff0000 !important;
+    box-shadow: 0 0 0 9999px rgba(255, 0, 0, 0.95) !important;
+}
+
+/* Chớp XANH DƯƠNG ở phần nền viền ngoài, lỗ ở giữa khuôn mặt vẫn hoàn toàn trong suốt giống Android */
+#face-oval-ring.flashing-blue {
+    border-color: #0000ff !important;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 255, 0.95) !important;
+}
