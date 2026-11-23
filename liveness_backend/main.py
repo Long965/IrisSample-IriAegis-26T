@@ -1,32 +1,26 @@
 import os
 import sqlite3
 import logging
+from datetime import datetime
 from typing import Tuple, Optional, List, Dict, Any
 import cv2
 import numpy as np
-from fastapi import FastAPI, Request, File, UploadFile, Form, HTTPException
+
+from fastapi import FastAPI, Request, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 
-# Nạp TFLite Interpreter (Tương thích cả ai_edge_litert, tflite_runtime và tensorflow)
-try:
-    from ai_edge_litert.interpreter import Interpreter
-except ImportError:
-    try:
-        from tflite_runtime.interpreter import Interpreter
-    except ImportError:
-        import tensorflow as tf
-        Interpreter = tf.lite.Interpreter
+from core.tflite_models import AntiSpoofHelper, FaceMatchHelper
 
 # Cấu hình Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("LivenessBackend")
 
-# Đường dẫn tuyệt đối cho toàn bộ tài nguyên Backend
+# Đường dẫn tuyệt đối chuẩn (Đồng bộ với DatabaseHelper.java -> attendance.db)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ANDROID_DB_FILE = os.path.join(BASE_DIR, "IrisDatabase.db")
+DB_FILE = os.path.join(BASE_DIR, "attendance.db")
 MODEL_PATH = os.path.join(BASE_DIR, "models", "minivision_anti_spoof.tflite")
 FACE_MATCH_MODEL_PATH = os.path.join(BASE_DIR, "models", "mobile_face_net.tflite")
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
@@ -35,14 +29,12 @@ os.makedirs(os.path.join(UPLOAD_DIR, "students"), exist_ok=True)
 os.makedirs(os.path.join(UPLOAD_DIR, "admins"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "models"), exist_ok=True)
 
-# Khởi tạo Ứng dụng FastAPI
 app = FastAPI(
-    title="Web Liveness Detection & Face Recognition Production API",
-    description="Backend Python FastAPI tích hợp đầy đủ các tính năng Liveness, Anti-Spoofing và So khớp khuôn mặt 1:1 từ Android",
-    version="3.0.0"
+    title="Web Liveness Detection & Face Recognition API (1:1 Android Port)",
+    description="Backend FastAPI đồng bộ 1:1 với AntiSpoofHelper, FaceMatchHelper, LivenessLogic, FaceCaptureActivity, AddStudentActivity, AdminDetailActivity và DatabaseHelper.",
+    version="5.0.0"
 )
 
-# Cấu hình CORS để Web chính (React / Vue / Angular / Django / PHP / HTML5) gọi API không bị chặn
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,271 +43,134 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount thư mục tĩnh static và uploads
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-
-# ==================== 1. MINIVISION ANTI-SPOOFING (TFLite) ====================
-
-class AntiSpoofHelper:
-    """Mô hình AI Passive Anti-Spoofing (MiniVision TFLite) phân biệt người thật vs ảnh/video giả mạo."""
-    REAL_THRESHOLD = 0.50
-
-    def __init__(self, model_path: str):
-        self.interpreter = None
-        self.is_loaded = False
-        self.is_nchw = True
-        self.input_width = 80
-        self.input_height = 80
-        self.output_class_count = 3
-
-        if not os.path.exists(model_path):
-            logger.warning(f"Chưa tìm thấy model MiniVision tại: {model_path}")
-            return
-
-        try:
-            self.interpreter = Interpreter(model_path=model_path)
-            self.interpreter.allocate_tensors()
-            in_det = self.interpreter.get_input_details()[0]
-            out_det = self.interpreter.get_output_details()[0]
-            self.input_index = in_det["index"]
-            self.output_index = out_det["index"]
-
-            shape = in_det["shape"]
-            if len(shape) == 4:
-                if shape[1] == 3:
-                    self.is_nchw = True
-                    self.input_height, self.input_width = int(shape[2]), int(shape[3])
-                else:
-                    self.is_nchw = False
-                    self.input_height, self.input_width = int(shape[1]), int(shape[2])
-
-            if len(out_det["shape"]) >= 2:
-                self.output_class_count = int(out_det["shape"][1])
-            self.is_loaded = True
-            logger.info(f"Đã nạp MiniVision TFLite: NCHW={self.is_nchw}, Size={self.input_width}x{self.input_height}, Classes={self.output_class_count}")
-        except Exception as e:
-            logger.error(f"Lỗi nạp MiniVision TFLite: {e}")
-
-    @staticmethod
-    def _softmax(logits: np.ndarray) -> np.ndarray:
-        e = np.exp(logits - np.max(logits))
-        return e / np.sum(e)
-
-    def classify_face(self, expanded_crop_bgr: np.ndarray) -> Tuple[bool, float, float]:
-        if not self.is_loaded or expanded_crop_bgr is None or expanded_crop_bgr.size == 0:
-            return False, 0.0, 1.0
-
-        resized = cv2.resize(expanded_crop_bgr, (self.input_width, self.input_height), interpolation=cv2.INTER_LINEAR)
-        img_float = resized.astype(np.float32)  # Hệ màu BGR thô [0..255]
-        tensor_input = np.transpose(img_float, (2, 0, 1))[np.newaxis, ...] if self.is_nchw else img_float[np.newaxis, ...]
-
-        self.interpreter.set_tensor(self.input_index, tensor_input)
-        self.interpreter.invoke()
-        probs = self._softmax(self.interpreter.get_tensor(self.output_index)[0])
-
-        real_score = float(probs[1])
-        spoof_score = float(probs[0] + probs[2]) if self.output_class_count == 3 else float(probs[0])
-        return real_score >= self.REAL_THRESHOLD, real_score, spoof_score
-
-
-# ==================== 2. MOBILEFACENET SO KHỚP KHUÔN MẶT ====================
-
-class FaceMatchHelper:
-    """Mô hình MobileFaceNet TFLite trích xuất Vector 192/128 chiều để so khớp khuôn mặt 1:1."""
-    MATCH_THRESHOLD = 0.65  # Ngưỡng Cosine Similarity chuẩn cho MobileFaceNet
-
-    def __init__(self, model_path: str):
-        self.interpreter = None
-        self.is_loaded = False
-        if not os.path.exists(model_path):
-            logger.warning(f"Chưa tìm thấy model MobileFaceNet tại: {model_path}")
-            return
-
-        try:
-            self.interpreter = Interpreter(model_path=model_path)
-            self.interpreter.allocate_tensors()
-            self.input_details = self.interpreter.get_input_details()
-            self.output_details = self.interpreter.get_output_details()
-            self.is_loaded = True
-            logger.info("Đã nạp MobileFaceNet TFLite cho So khớp khuôn mặt thành công!")
-        except Exception as e:
-            logger.error(f"Lỗi nạp MobileFaceNet TFLite: {e}")
-
-    def extract_embedding(self, face_bgr: np.ndarray) -> Optional[np.ndarray]:
-        if not self.is_loaded or face_bgr is None or face_bgr.size == 0:
-            return None
-
-        try:
-            in_shape = self.input_details[0]["shape"]
-            h = int(in_shape[2]) if (len(in_shape) == 4 and in_shape[1] == 3) else int(in_shape[1])
-            w = int(in_shape[3]) if (len(in_shape) == 4 and in_shape[1] == 3) else int(in_shape[2])
-
-            resized = cv2.resize(face_bgr, (w, h), interpolation=cv2.INTER_LINEAR)
-            rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB).astype(np.float32)
-
-            # Chuẩn hóa về dải [-1.0, 1.0] khớp 100% với FaceMatchHelper.java trên Android
-            normalized_rgb = (rgb - 127.5) / 128.0
-            input_data = np.expand_dims(normalized_rgb, axis=0)
-
-            if len(in_shape) == 4 and in_shape[1] == 3:
-                input_data = np.transpose(input_data, (0, 3, 1, 2))
-
-            self.interpreter.set_tensor(self.input_details[0]["index"], input_data)
-            self.interpreter.invoke()
-            embedding = self.interpreter.get_tensor(self.output_details[0]["index"])[0]
-
-            norm = np.linalg.norm(embedding)
-            return (embedding / norm) if norm > 0 else None
-        except Exception as e:
-            logger.error(f"Lỗi trích xuất Vector MobileFaceNet: {e}")
-            return None
-
-    @staticmethod
-    def compute_similarity(emb1: np.ndarray, emb2: np.ndarray) -> float:
-        if emb1 is None or emb2 is None:
-            return 0.0
-        return float(np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2) + 1e-8))
-
-    def compute_max_similarity(self, face1_bgr: np.ndarray, face2_bgr: np.ndarray) -> float:
-        """Tính Cosine Similarity tối đa giữa 2 ảnh khuôn mặt (tự động đảo chiều lật gương camera)."""
-        if face1_bgr is None or face2_bgr is None or face1_bgr.size == 0 or face2_bgr.size == 0:
-            return 0.0
-
-        face1_flip = cv2.flip(face1_bgr, 1)
-        face2_flip = cv2.flip(face2_bgr, 1)
-
-        e1_orig = self.extract_embedding(face1_bgr)
-        e1_flip = self.extract_embedding(face1_flip)
-        e2_orig = self.extract_embedding(face2_bgr)
-        e2_flip = self.extract_embedding(face2_flip)
-
-        sims = []
-        for e1 in [e1_orig, e1_flip]:
-            for e2 in [e2_orig, e2_flip]:
-                if e1 is not None and e2 is not None:
-                    sims.append(self.compute_similarity(e1, e2))
-
-        return max(sims) if sims else 0.0
-
-
+# Nạp 2 mô hình AI & bộ phát hiện khuôn mặt cho ảnh upload tĩnh
 anti_spoof_helper = AntiSpoofHelper(MODEL_PATH)
 face_match_helper = FaceMatchHelper(FACE_MATCH_MODEL_PATH)
+haar_face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 
 
-# ==================== 3. KẾT NỐI VÀ QUẢN LÝ DATABASE ====================
+# ==================== CƠ SỞ DỮ LIỆU SQLITE (attendance.db) ====================
 
 def get_db_connection() -> sqlite3.Connection:
-    """Kết nối trực tiếp vào IrisDatabase.db chuẩn Android."""
-    if not os.path.exists(ANDROID_DB_FILE):
-        init_db()
-    conn = sqlite3.connect(ANDROID_DB_FILE)
+    conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
-    """Khởi tạo CSDL và nạp dữ liệu từ các file CSV mẫu nếu chưa có."""
-    conn = sqlite3.connect(ANDROID_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Bảng students (khớp DatabaseHelper.java)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS students (
             student_id TEXT PRIMARY KEY,
-            full_name TEXT NOT NULL,
+            full_name TEXT,
             email TEXT,
             phone TEXT,
             photo_path TEXT,
-            checkin_password TEXT DEFAULT ''
+            checkin_password TEXT
         )
     """)
 
+    # Bảng admin (khớp DatabaseHelper.java: cột photo_path và role)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS admin (
             admin_id TEXT PRIMARY KEY,
-            admin_code TEXT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
             full_name TEXT NOT NULL,
-            email TEXT,
+            date_of_birth TEXT,
             phone TEXT,
-            photo TEXT
+            gender TEXT,
+            photo_path TEXT,
+            description TEXT,
+            role TEXT NOT NULL DEFAULT 'ADMIN',
+            admin_code TEXT
         )
     """)
 
+    # Bảng checkin_history (khớp DatabaseHelper.java)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS web_liveness_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            entity_id TEXT NOT NULL,
-            folder TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            liveness_status TEXT NOT NULL,
-            real_score REAL,
-            spoof_score REAL,
-            shift_score REAL,
-            match_similarity REAL,
-            reason TEXT
+        CREATE TABLE IF NOT EXISTS checkin_history (
+            checkin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT,
+            subject_id TEXT,
+            checkin_time TEXT,
+            checkin_date TEXT
         )
     """)
 
-    # Nạp dữ liệu từ CSV nếu bảng students chưa có bản ghi
-    cursor.execute("SELECT COUNT(*) FROM students")
-    if cursor.fetchone()[0] == 0:
-        csv_student_path = os.path.join(BASE_DIR, "..", "sample_students_import.csv")
-        if os.path.exists(csv_student_path):
-            try:
-                import csv
-                with open(csv_student_path, "r", encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        sid = row.get("student_id", "").strip()
-                        name = row.get("full_name", "").strip()
-                        phone = row.get("phone", "").strip()
-                        email = row.get("email", "").strip()
-                        photo = row.get("photo_path", "").strip()
-                        if sid and name:
-                            cursor.execute("INSERT OR REPLACE INTO students (student_id, full_name, email, phone, photo_path) VALUES (?, ?, ?, ?, ?)",
-                                           (sid, name, email, phone, photo))
-                conn.commit()
-            except Exception as e:
-                logger.error(f"Lỗi đọc CSV sinh viên: {e}")
-
-    conn.close()
-
-init_db()
-
-def ensure_web_log_table():
-    if not os.path.exists(ANDROID_DB_FILE):
-        init_db()
-    conn = get_db_connection()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS web_liveness_logs (
+    # Bảng liveness_logs (lưu chi tiết điểm AI & lý do để hiển thị trên Web test/Web chính)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS liveness_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            entity_id TEXT NOT NULL,
-            folder TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            liveness_status TEXT NOT NULL,
-            real_score REAL,
-            spoof_score REAL,
-            shift_score REAL,
-            match_similarity REAL,
-            reason TEXT
+            entity_id TEXT,
+            folder TEXT,
+            full_name TEXT,
+            liveness_status TEXT,
+            real_score REAL DEFAULT 0.0,
+            shift_score REAL DEFAULT 0.0,
+            match_similarity REAL DEFAULT 0.0,
+            reason TEXT,
+            timestamp TEXT
         )
     """)
+
     conn.commit()
     conn.close()
 
-ensure_web_log_table()
 
-def resolve_local_photo_path(entity_id: str, folder: str, android_db_photo_path: Optional[str]) -> Optional[str]:
-    """Ánh xạ đường dẫn ảnh đại diện chuẩn trên đĩa PC."""
+init_db()
+
+
+def save_liveness_log(
+        entity_id: str,
+        folder: str,
+        full_name: str,
+        status: str,
+        reason: str,
+        real_score: float = 0.0,
+        shift_score: float = 0.0,
+        match_similarity: float = 0.0,
+        subject_id: Optional[str] = None
+):
+    now = datetime.now()
+    ts = now.strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_db_connection()
+    conn.execute(
+        """
+        INSERT INTO liveness_logs (entity_id, folder, full_name, liveness_status, real_score, shift_score, match_similarity, reason, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (entity_id, folder, full_name, status, real_score, shift_score, match_similarity, reason, ts)
+    )
+    # Nếu là sinh viên điểm danh PASSED -> ghi thêm vào checkin_history chuẩn Android
+    if status == "PASSED" and folder == "students":
+        conn.execute(
+            """
+            INSERT INTO checkin_history (student_id, subject_id, checkin_time, checkin_date)
+            VALUES (?, ?, ?, ?)
+            """,
+            (entity_id, subject_id or "WEB_CHECKIN", now.strftime("%H:%M:%S"), now.strftime("%d/%m/%Y"))
+        )
+    conn.commit()
+    conn.close()
+
+
+def resolve_local_photo_path(entity_id: str, folder: str, db_photo_path: Optional[str]) -> Optional[str]:
     candidates = [
         os.path.join(UPLOAD_DIR, folder, f"avatar_{entity_id}.jpg"),
         os.path.join(UPLOAD_DIR, folder, f"face_{entity_id}.jpg"),
     ]
-    if android_db_photo_path:
-        base_name = os.path.basename(android_db_photo_path)
+    if db_photo_path:
+        if os.path.exists(db_photo_path) and os.path.isfile(db_photo_path):
+            return db_photo_path
+        base_name = os.path.basename(db_photo_path)
         if base_name:
             candidates.append(os.path.join(UPLOAD_DIR, folder, base_name))
 
@@ -324,8 +179,15 @@ def resolve_local_photo_path(entity_id: str, folder: str, android_db_photo_path:
             return path
     return None
 
-def fetch_all_android_users() -> List[Dict[str, Any]]:
-    """Đọc trực tiếp danh sách từ 2 bảng `students` và `admins` của Android IrisDatabase.db."""
+
+def get_admin_role(admin_id: str) -> Optional[str]:
+    conn = get_db_connection()
+    row = conn.execute("SELECT role FROM admin WHERE admin_id = ?", (admin_id,)).fetchone()
+    conn.close()
+    return row["role"] if row else None
+
+
+def fetch_all_users() -> List[Dict[str, Any]]:
     conn = get_db_connection()
     cursor = conn.cursor()
     users: List[Dict[str, Any]] = []
@@ -334,103 +196,42 @@ def fetch_all_android_users() -> List[Dict[str, Any]]:
     tables = [r["name"] for r in cursor.fetchall()]
 
     if "students" in tables:
-        cursor.execute("SELECT * FROM students")
-        for r in cursor.fetchall():
-            row_dict = dict(r)
-            eid = str(row_dict.get("student_id") or row_dict.get("id") or "")
-            fname = row_dict.get("full_name") or row_dict.get("name") or eid
-            ppath = row_dict.get("photo_path") or row_dict.get("photo") or ""
+        for r in cursor.execute("SELECT * FROM students").fetchall():
+            d = dict(r)
+            eid = str(d.get("student_id") or "")
             if eid:
+                ppath = d.get("photo_path") or ""
                 local_photo = resolve_local_photo_path(eid, "students", ppath)
-                has_photo = bool(ppath and len(str(ppath).strip()) > 0) or (local_photo is not None)
                 users.append({
                     "entity_id": eid,
                     "folder": "students",
-                    "full_name": fname,
-                    "has_photo": has_photo,
+                    "full_name": d.get("full_name") or eid,
+                    "role": "STUDENT",
+                    "has_photo": local_photo is not None,
                     "local_photo": local_photo
                 })
 
-    if "admins" in tables or "admin" in tables:
-        tbl = "admin" if "admin" in tables else "admins"
-        cursor.execute(f"SELECT * FROM {tbl}")
-        for r in cursor.fetchall():
-            row_dict = dict(r)
-            eid = str(row_dict.get("admin_id") or row_dict.get("admin_code") or row_dict.get("id") or "")
-            fname = row_dict.get("full_name") or row_dict.get("name") or eid
-            ppath = row_dict.get("photo") or row_dict.get("photo_path") or ""
+    if "admin" in tables:
+        for r in cursor.execute("SELECT * FROM admin").fetchall():
+            d = dict(r)
+            eid = str(d.get("admin_id") or "")
             if eid:
+                ppath = d.get("photo_path") or d.get("photo") or ""
                 local_photo = resolve_local_photo_path(eid, "admins", ppath)
-                has_photo = bool(ppath and len(str(ppath).strip()) > 0) or (local_photo is not None)
                 users.append({
                     "entity_id": eid,
                     "folder": "admins",
-                    "full_name": fname,
-                    "has_photo": has_photo,
+                    "full_name": d.get("full_name") or eid,
+                    "role": d.get("role") or "ADMIN",
+                    "has_photo": local_photo is not None,
                     "local_photo": local_photo
                 })
 
     conn.close()
     return users
 
-def check_duplicate_face_on_disk(new_face_bgr: np.ndarray, current_entity_id: str, current_folder: str) -> Optional[Any]:
-    """
-    1:1 Port của hàm checkDuplicateFace() trong AddStudentActivity.java & AdminDetailActivity.java:
-    Quét trực tiếp tất cả file ảnh .jpg trong thư mục uploads/students/ và uploads/admins/
-    để phát hiện gian lận trùng lặp khuôn mặt giữa các đối tượng khác nhau.
-    """
-    if not face_match_helper.is_loaded or new_face_bgr is None or new_face_bgr.size == 0:
-        return None
 
-    search_dirs = [
-        ("students", os.path.join(UPLOAD_DIR, "students")),
-        ("admins", os.path.join(UPLOAD_DIR, "admins"))
-    ]
-
-    for f_name, dir_path in search_dirs:
-        if not os.path.exists(dir_path):
-            continue
-
-        for filename in os.listdir(dir_path):
-            if not filename.lower().endswith(".jpg") or filename.startswith("temp_"):
-                continue
-
-            if filename == f"avatar_{current_entity_id}.jpg" or filename == f"face_{current_entity_id}.jpg":
-                continue
-
-            file_full_path = os.path.join(dir_path, filename)
-            try:
-                ref_img = cv2.imread(file_full_path)
-                if ref_img is None or ref_img.size == 0:
-                    continue
-
-                similarity = face_match_helper.compute_max_similarity(new_face_bgr, ref_img)
-                logger.info(f"Quét đĩa đối soát 1:1 -> [{current_entity_id}] vs [{filename}] = {similarity:.4f}")
-
-                if similarity >= 0.55:
-                    other_id = filename.replace("avatar_", "").replace("face_", "").replace(".jpg", "")
-                    other_name = other_id
-                    try:
-                        conn = get_db_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT full_name FROM students WHERE student_id = ?", (other_id,))
-                        row = cursor.fetchone()
-                        if not row:
-                            cursor.execute("SELECT full_name FROM admin WHERE admin_id = ? OR admin_code = ?", (other_id, other_id))
-                            row = cursor.fetchone()
-                        conn.close()
-                        if row:
-                            other_name = row[0]
-                    except Exception as e:
-                        logger.error(f"Lỗi truy vấn tên đối tượng trùng: {e}")
-
-                    return (other_name, other_id), similarity
-            except Exception as e:
-                logger.error(f"Lỗi quét file đối soát {filename}: {e}")
-
-    return None
-
-# ==================== 4. XỬ LÝ ẢNH & SPECTRUM FLASH ====================
+# ==================== XỬ LÝ ẢNH & CROP (1:1 FaceCaptureActivity / AddStudentActivity) ====================
 
 def decode_image(file_bytes: bytes) -> np.ndarray:
     img = cv2.imdecode(np.frombuffer(file_bytes, np.uint8), cv2.IMREAD_COLOR)
@@ -438,24 +239,61 @@ def decode_image(file_bytes: bytes) -> np.ndarray:
         raise ValueError("Không thể giải mã ảnh")
     return img
 
-def crop_tight_face_1_0x(img_bgr: np.ndarray, bx: float, by: float, bw: float, bh: float) -> np.ndarray:
+
+def detect_and_crop_face_static(img_bgr: np.ndarray, margin: float = 0.35) -> Optional[np.ndarray]:
+    """Tương đương ML Kit FaceDetector ở AddStudentActivity & AdminDetailActivity: Có margin padding (35%-40%) để lấy trán, tóc, cằm và má."""
+    if img_bgr is None or img_bgr.size == 0:
+        return None
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    faces = haar_face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
+    if len(faces) == 0:
+        return None
+    x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+    img_h, img_w, _ = img_bgr.shape
+
+    pad_w = int(w * margin)
+    pad_h = int(h * (margin + 0.05))
+
+    x1 = max(0, x - pad_w)
+    y1 = max(0, y - pad_h)
+    x2 = min(img_w, x + w + pad_w)
+    y2 = min(img_h, y + h + pad_h)
+
+    cropped = img_bgr[y1:y2, x1:x2]
+    return cropped if cropped.size > 0 else img_bgr
+
+
+# 1. Thống nhất 1 hàm cắt ảnh chuẩn (margin=0.20) cho cả Đăng ký, Upload và Xác thực
+def get_face_crop_for_matching(img_bgr: np.ndarray, bx: Optional[float] = None, by: Optional[float] = None, bw: Optional[float] = None, bh: Optional[float] = None) -> np.ndarray:
     if img_bgr is None or img_bgr.size == 0:
         return img_bgr
+    cropped_haar = detect_and_crop_face_static(img_bgr, margin=0.20)
+    if cropped_haar is not None and cropped_haar.size > 0:
+        return cropped_haar
+    if all(v is not None for v in (bx, by, bw, bh)):
+        return crop_tight_face_1_0x(img_bgr, bx, by, bw, bh)
+    return img_bgr
+
+
+def crop_tight_face_1_0x(img_bgr: np.ndarray, bx: float, by: float, bw: float, bh: float) -> np.ndarray:
     h, w, _ = img_bgr.shape
-    x1 = int(max(0, bx * w))
-    y1 = int(max(0, by * h))
-    x2 = int(min(w, (bx + bw) * w))
-    y2 = int(min(h, (by + bh) * h))
+    x1, y1 = int(max(0, bx * w)), int(max(0, by * h))
+    x2, y2 = int(min(w, (bx + bw) * w)), int(min(h, (by + bh) * h))
     if x2 - x1 < 10 or y2 - y1 < 10:
         return img_bgr
     cropped = img_bgr[y1:y2, x1:x2]
     return cropped if cropped.size > 0 else img_bgr
 
+
 def crop_expanded_face_2_7x(img_bgr: np.ndarray, bx: float, by: float, bw: float, bh: float) -> np.ndarray:
     h, w, _ = img_bgr.shape
     cx, cy = (bx + bw / 2.0) * w, (by + bh / 2.0) * h
     max_dim = max(bw * w, bh * h) * 2.7 / 2.0
-    return img_bgr[int(max(0, cy - max_dim)):int(min(h, cy + max_dim)), int(max(0, cx - max_dim)):int(min(w, cx + max_dim))]
+    x1, y1 = int(max(0, cx - max_dim)), int(max(0, cy - max_dim))
+    x2, y2 = int(min(w, cx + max_dim)), int(min(h, cy + max_dim))
+    cropped = img_bgr[y1:y2, x1:x2]
+    return cropped if cropped.size > 0 else img_bgr
+
 
 def extract_face_core_rgb(img_bgr: np.ndarray, bx: float, by: float, bw: float, bh: float) -> Tuple[float, float, float]:
     h, w, _ = img_bgr.shape
@@ -463,15 +301,18 @@ def extract_face_core_rgb(img_bgr: np.ndarray, bx: float, by: float, bw: float, 
     y1 = int(max(0, (by + 0.22 * bh) * h))
     x2 = int(min(w, (bx + 0.78 * bw) * w))
     y2 = int(min(h, (by + 0.78 * bh) * h))
-
     if x2 - x1 < 8 or y2 - y1 < 8:
         x1, y1, x2, y2 = int(w * 0.35), int(h * 0.35), int(w * 0.65), int(h * 0.65)
-
     core = img_bgr[y1:y2, x1:x2]
     mean_bgr = np.mean(core, axis=(0, 1))
     return float(mean_bgr[2]), float(mean_bgr[1]), float(mean_bgr[0])
 
-def evaluate_red_blue_ratio_cycle(rgb_base: Tuple[float, float, float], rgb_red: Tuple[float, float, float], rgb_blue: Tuple[float, float, float]) -> Tuple[bool, float, str]:
+
+def evaluate_red_blue_ratio_cycle(
+        rgb_base: Tuple[float, float, float],
+        rgb_red: Tuple[float, float, float],
+        rgb_blue: Tuple[float, float, float]
+) -> Tuple[bool, float, str]:
     r_red, g_red, b_red = rgb_red
     r_blue, g_blue, b_blue = rgb_blue
     r_base, _, b_base = rgb_base
@@ -488,137 +329,187 @@ def evaluate_red_blue_ratio_cycle(rgb_base: Tuple[float, float, float], rgb_red:
     norm_r = (r_red / sum_red) - (r_blue / sum_blue)
     norm_b = (b_blue / sum_blue) - (b_red / sum_red)
 
-    passed = (shift >= 0.008) and (norm_r >= 0.0010) and (norm_b >= 0.0010) and (ratio_red > ratio_blue) and ((r_red - r_base) >= -2.0) and ((b_blue - b_base) >= -2.0)
+    passed = (
+            (shift >= 0.008)
+            and (norm_r >= 0.0010)
+            and (norm_b >= 0.0010)
+            and (ratio_red > ratio_blue)
+            and ((r_red - r_base) >= -2.0)
+            and ((b_blue - b_base) >= -2.0)
+    )
     if not passed:
         return False, round(shift, 4), "Phát hiện video giả mạo! (Không đạt phản xạ ánh sáng Flash)"
     return True, round(shift, 4), "Hợp lệ"
 
-def validate_and_process_student_photo(
-        img_bgr: np.ndarray,
+
+# ==================== CHECK TRÙNG & CHÍNH CHỦ (1:1 AddStudent / AdminDetail) ====================
+
+def check_if_face_already_exists(
+        new_face_bgr: np.ndarray,
+        current_entity_id: str,
+        folder: str
+) -> Optional[Any]:
+    if not face_match_helper.is_model_loaded or new_face_bgr is None or new_face_bgr.size == 0:
+        return None
+
+    new_emb = face_match_helper.get_face_embedding(new_face_bgr)
+    if new_emb is None:
+        return None
+
+    dir_path = os.path.join(UPLOAD_DIR, folder)
+    if not os.path.exists(dir_path):
+        return None
+
+    # AdminDetailActivity: chỉ so trùng trong CÙNG role (SUPER_ADMIN vs SUPER_ADMIN, ADMIN vs ADMIN)
+    my_role = get_admin_role(current_entity_id) if folder == "admins" else None
+
+    for filename in os.listdir(dir_path):
+        if not filename.lower().endswith(".jpg") or filename.startswith("temp_"):
+            continue
+        if filename in (f"avatar_{current_entity_id}.jpg", f"face_{current_entity_id}.jpg"):
+            continue
+
+        other_id = filename.replace("avatar_", "").replace("face_", "").replace(".jpg", "")
+        if folder == "admins" and my_role is not None:
+            other_role = get_admin_role(other_id)
+            if other_role is not None and my_role != other_role:
+                continue
+
+        file_full_path = os.path.join(dir_path, filename)
+        try:
+            ref_img = cv2.imread(file_full_path)
+            if ref_img is None or ref_img.size == 0:
+                continue
+            exist_emb = face_match_helper.get_face_embedding(ref_img)
+            if exist_emb is not None:
+                matched, similarity = face_match_helper.compare_faces(exist_emb, new_emb)
+                if matched and similarity is not None:
+                    return other_id, float(similarity)
+        except Exception as e:
+            logger.error(f"Lỗi đọc file đối chiếu {filename}: {e}")
+
+    return None
+
+
+def validate_and_save_photo(
+        full_img_bgr: np.ndarray,
         entity_id: str,
         folder: str,
-        tight_crop: Optional[np.ndarray] = None
+        bx: float = 0.25, by: float = 0.20, bw: float = 0.50, bh: float = 0.60
 ) -> Tuple[bool, str, Dict[str, Any]]:
-    """
-    Logic 1:1 với AddStudentActivity.java & AdminDetailActivity.java trên Android:
-    1. Kiểm tra gian lận trùng khuôn mặt với TẤT CẢ sinh viên/admin KHÁC trong CSDL (checkIfFaceAlreadyExists).
-    2. Nếu đối tượng này ĐÃ CÓ avatar cũ -> Kiểm tra ảnh mới có khớp với avatar cũ hay không (isOwner).
-    3. Nếu hợp lệ -> Lưu ảnh chính thức và cập nhật photo_path vào IrisDatabase.db.
-    """
-    users = fetch_all_android_users()
-    target_user = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == folder), None)
+    save_folder = folder if folder in ("students", "admins") else "students"
+    users = fetch_all_users()
+    target_user = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == save_folder), None)
     full_name = target_user["full_name"] if target_user else entity_id
-    save_folder = folder if folder in ["students", "admins"] else "students"
 
-    crop_to_use = tight_crop if (tight_crop is not None and tight_crop.size > 0) else img_bgr
+    # Trích xuất khuôn mặt chuẩn bằng OpenCV Haar Cascade (khớp 1:1 ML Kit FaceDetector ở AddStudentActivity)
+    face_crop = get_face_crop_for_matching(full_img_bgr, bx, by, bw, bh)
 
-    # Bước 1: Kiểm tra gian lận trùng khuôn mặt với các sinh viên KHÁC (checkIfFaceAlreadyExists)
-    dup_info = check_duplicate_face_on_disk(img_bgr, entity_id, folder)
-    if dup_info is None and tight_crop is not None and tight_crop.size > 0:
-        dup_info = check_duplicate_face_on_disk(tight_crop, entity_id, folder)
+    new_emb = face_match_helper.get_face_embedding(face_crop)
+    if new_emb is None:
+        new_emb = face_match_helper.get_face_embedding(full_img_bgr)
 
-    if dup_info is not None:
-        (ex_name, ex_id), raw_similarity = dup_info
-        similarity_val = float(raw_similarity)
-        msg = f"❌ Gian lận: Khuôn mặt này đã được sử dụng bởi sinh viên mã: {ex_id} ({ex_name}) - Khớp {similarity_val * 100:.1f}%!"
-        logger.warning(f"Từ chối đăng ký ảnh: {msg}")
-        return False, msg, {"duplicate_id": str(ex_id), "duplicate_name": str(ex_name), "similarity": round(similarity_val, 4)}
+    if new_emb is None:
+        return False, "❌ Lỗi: Không trích xuất được đặc trưng khuôn mặt.", {}
 
-    # Bước 2: Nếu đối tượng ĐÃ CÓ avatar cũ -> Kiểm tra ảnh mới có khớp chính chủ hay không (isOwner)
-    existing_official_photo = os.path.join(UPLOAD_DIR, save_folder, f"avatar_{entity_id}.jpg")
-    if os.path.exists(existing_official_photo):
-        try:
-            old_img = cv2.imread(existing_official_photo)
-            if old_img is not None and face_match_helper.is_loaded:
-                crop_for_owner = tight_crop if (tight_crop is not None and tight_crop.size > 0) else img_bgr
-                raw_similarity = face_match_helper.compute_max_similarity(crop_for_owner, old_img)
-                similarity_val = float(raw_similarity)
-                logger.info(f"Kiểm tra chính chủ cập nhật ảnh -> [{entity_id}] vs [Avatar cũ] = {similarity_val:.4f}")
-                is_owner = similarity_val >= 0.45  # Ngưỡng an toàn khi chính chủ chụp cập nhật ảnh mới
+    target_dir = os.path.join(UPLOAD_DIR, save_folder)
+    existing_file = resolve_local_photo_path(entity_id, save_folder, target_user["local_photo"] if target_user else None)
+
+    # Bước 1: Kiểm tra chính chủ nếu đã có ảnh cũ (AddStudentActivity.java dòng 244)
+    if existing_file and os.path.exists(existing_file):
+        old_img = cv2.imread(existing_file)
+        if old_img is not None:
+            old_emb = face_match_helper.get_face_embedding(old_img)
+            if old_emb is not None:
+                is_owner, owner_sim = face_match_helper.compare_faces(old_emb, new_emb)
                 if not is_owner:
-                    msg = f"❌ Khuôn mặt không khớp với avatar hiện tại của sinh viên này! (Độ khớp: {similarity_val * 100:.1f}%)"
-                    logger.warning(msg)
-                    return False, msg, {"owner_mismatch": True, "similarity": round(similarity_val, 4)}
-        except Exception as e:
-            logger.error(f"Lỗi kiểm tra chính chủ: {e}")
+                    return False, f"❌ Khuôn mặt không khớp với avatar hiện tại của sinh viên này! (Độ khớp: {float(owner_sim or 0.0) * 100:.1f}%)", {
+                        "owner_mismatch": True,
+                        "similarity": round(float(owner_sim or 0.0), 4)
+                    }
 
-    # Bước 3: Lưu ảnh chính thức và cập nhật CSDL
-    file_path = os.path.join(UPLOAD_DIR, save_folder, f"avatar_{entity_id}.jpg")
-    cv2.imwrite(file_path, crop_to_use)
+    # Bước 2: Kiểm tra trùng khuôn mặt với sinh viên khác (checkIfFaceAlreadyExists)
+    dup_res = check_if_face_already_exists(face_crop, entity_id, save_folder)
+    if dup_res is None and face_crop.shape != full_img_bgr.shape:
+        dup_res = check_if_face_already_exists(full_img_bgr, entity_id, save_folder)
+
+    if dup_res is not None:
+        duplicate_id, similarity = dup_res
+        return False, f"❌ Gian lận: Khuôn mặt này đã được dùng bởi sinh viên mã: {duplicate_id}", {
+            "duplicate_id": duplicate_id,
+            "similarity": round(float(similarity), 4)
+        }
+
+    # Bước 3: Xóa file cũ và lưu thống nhất avatar_<id>.jpg
+    for prefix in ("avatar_", "face_"):
+        old_p = os.path.join(target_dir, f"{prefix}{entity_id}.jpg")
+        if os.path.exists(old_p):
+            try:
+                os.remove(old_p)
+            except Exception as e:
+                logger.error(f"Lỗi xóa file cũ {old_p}: {e}")
+
+    file_path = os.path.join(target_dir, f"avatar_{entity_id}.jpg")
+    cv2.imwrite(file_path, face_crop, [int(cv2.IMWRITE_JPEG_QUALITY), 92])
 
     conn = get_db_connection()
     if save_folder == "students":
         conn.execute("UPDATE students SET photo_path = ? WHERE student_id = ?", (file_path, entity_id))
     else:
-        conn.execute("UPDATE admin SET photo = ? WHERE admin_id = ? OR admin_code = ?", (file_path, entity_id, entity_id))
+        conn.execute("UPDATE admin SET photo_path = ? WHERE admin_id = ?", (file_path, entity_id))
     conn.commit()
     conn.close()
 
-    success_msg = f"✅ Đăng ký khuôn mặt thành công cho sinh viên {full_name} ({entity_id})!"
-    logger.info(success_msg)
-    return True, success_msg, {"photo_path": str(file_path)}
+    return True, f"✅ Đăng ký khuôn mặt thành công cho sinh viên {full_name} ({entity_id})!", {"photo_path": file_path}
 
 
-# ==================== 5. TOÀN BỘ API ENDPOINTS CHO WEB THẬT ====================
+# ==================== API CHO TRANG WEB PHỤ (TEST) & WEB CHÍNH ====================
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
-    """Trang chủ giao diện Web Test."""
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.get("/health")
 async def health_check():
-    """API Kiểm tra Trạng thái Server & AI Models."""
     return {
         "status": "ONLINE",
-        "database": os.path.exists(ANDROID_DB_FILE),
-        "anti_spoof_model_loaded": anti_spoof_helper.is_loaded,
-        "face_match_model_loaded": face_match_helper.is_loaded
+        "database": os.path.exists(DB_FILE),
+        "anti_spoof_model_loaded": anti_spoof_helper.is_model_loaded,
+        "face_match_model_loaded": face_match_helper.is_model_loaded
     }
+
 
 @app.get("/api/v1/users")
 async def get_users():
-    """API Lấy danh sách Sinh viên & Admin từ CSDL Android IrisDatabase.db."""
     try:
-        users = fetch_all_android_users()
-        return {"success": True, "users": users}
+        return {"success": True, "users": fetch_all_users()}
     except Exception as e:
         return JSONResponse(status_code=200, content={"success": False, "message": str(e), "users": []})
 
+
 @app.get("/api/v1/attendance-logs")
-async def get_logs():
-    """API Lấy lịch sử Điểm danh trên Web."""
-    ensure_web_log_table()
+async def get_attendance_logs(limit: int = 30):
     conn = get_db_connection()
-    rows = conn.execute("""
-        SELECT entity_id, folder, full_name, timestamp, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason
-        FROM web_liveness_logs ORDER BY id DESC LIMIT 25
-    """).fetchall()
+    rows = conn.execute("SELECT * FROM liveness_logs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
     conn.close()
     return {"success": True, "logs": [dict(r) for r in rows]}
 
-@app.post("/api/v1/add-user")
-async def add_user(
-    entity_id: str = Form(...),
-    full_name: str = Form(...),
-    folder: str = Form("students"),
-    sub_info: str = Form("Sinh viên mới")
-):
-    """API Thêm đối tượng mới trực tiếp vào CSDL Android."""
-    try:
-        conn = get_db_connection()
-        if folder == "students":
-            conn.execute("INSERT OR REPLACE INTO students (student_id, full_name, email, phone, photo_path) VALUES (?, ?, '', ?, '')",
-                         (entity_id, full_name, sub_info))
-        else:
-            conn.execute("INSERT OR REPLACE INTO admin (admin_id, admin_code, full_name, email, phone, photo) VALUES (?, ?, ?, '', '', '')",
-                         (entity_id, entity_id, full_name))
-        conn.commit()
-        conn.close()
-        return {"success": True, "message": f"✅ Đã thêm đối tượng {full_name} ({entity_id}) vào CSDL!"}
-    except Exception as e:
-        return JSONResponse(status_code=200, content={"success": False, "message": f"❌ Lỗi thêm đối tượng: {str(e)}"})
 
+@app.post("/api/v1/log-client-fail")
+async def log_client_fail(
+        entity_id: str = Form(...),
+        folder: str = Form("students"),
+        reason: str = Form(...)
+):
+    users = fetch_all_users()
+    target = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == folder), None)
+    full_name = target["full_name"] if target else entity_id
+    save_liveness_log(entity_id, folder, full_name, "FAILED", reason)
+    return {"success": True}
+
+
+# 3. Sửa register_face và upload_student_photo: Truyền thẳng img_bgr GỐC vào validate_and_save_photo
 @app.post("/api/v1/register-face")
 async def register_face(
         entity_id: str = Form(...),
@@ -629,20 +520,20 @@ async def register_face(
         bbox_h: float = Form(0.60),
         face_image: UploadFile = File(...)
 ):
-    """API Chụp Đăng ký qua Camera Web (MODE_REGISTER)"""
     try:
         img_bgr = decode_image(await face_image.read())
-        tight_crop = crop_tight_face_1_0x(img_bgr, bbox_x, bbox_y, bbox_w, bbox_h)
-
-        success, message, extra = validate_and_process_student_photo(img_bgr, entity_id, folder, tight_crop)
-
-        return JSONResponse(
-            status_code=200,
-            content={"success": success, "message": message, **extra}
-        )
+        if detect_and_crop_face_static(img_bgr) is None:
+            return JSONResponse(status_code=200, content={
+                "success": False,
+                "message": "❌ Không tìm thấy khuôn mặt trong ảnh! Vui lòng thử lại."
+            })
+        # Truyền ảnh gốc + bbox (không tự cắt trước để tránh Double Crop)
+        success, message, extra = validate_and_save_photo(img_bgr, entity_id, folder, bbox_x, bbox_y, bbox_w, bbox_h)
+        return JSONResponse(status_code=200, content={"success": success, "message": message, **extra})
     except Exception as e:
-        logger.error(f"Lỗi register_face API: {e}", exc_info=True)
+        logger.error(f"Lỗi register_face: {e}", exc_info=True)
         return JSONResponse(status_code=200, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
+
 
 @app.post("/api/v1/upload-student-photo")
 async def upload_student_photo(
@@ -650,24 +541,25 @@ async def upload_student_photo(
         folder: str = Form("students"),
         photo_file: UploadFile = File(...)
 ):
-    """API Upload File Ảnh từ Máy tính / Web thật cho Sinh viên (Khớp 1:1 AddStudentActivity.java)"""
     try:
         img_bgr = decode_image(await photo_file.read())
-
-        success, message, extra = validate_and_process_student_photo(img_bgr, entity_id, folder)
-
-        return JSONResponse(
-            status_code=200,
-            content={"success": success, "message": message, **extra}
-        )
+        if detect_and_crop_face_static(img_bgr) is None:
+            return JSONResponse(status_code=200, content={
+                "success": False,
+                "message": "❌ Không tìm thấy khuôn mặt trong ảnh này! Vui lòng chọn ảnh rõ mặt."
+            })
+        # Truyền ảnh gốc vào (không tự cắt trước)
+        success, message, extra = validate_and_save_photo(img_bgr, entity_id, folder)
+        return JSONResponse(status_code=200, content={"success": success, "message": message, **extra})
     except Exception as e:
-        logger.error(f"Lỗi upload_student_photo API: {e}", exc_info=True)
+        logger.error(f"Lỗi upload_student_photo: {e}", exc_info=True)
         return JSONResponse(status_code=200, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
 
 @app.post("/api/v1/verify-liveness")
 async def verify_liveness(
         entity_id: str = Form(...),
         folder: str = Form("students"),
+        subject_id: Optional[str] = Form(None),
         bbox_x: float = Form(0.25),
         bbox_y: float = Form(0.20),
         bbox_w: float = Form(0.50),
@@ -676,123 +568,127 @@ async def verify_liveness(
         red_flash_file: UploadFile = File(...),
         blue_flash_file: UploadFile = File(...)
 ):
-    """API Xác thực Liveness + So khớp khuôn mặt 1:1 cho Chế độ Điểm danh (MODE_CHECKIN)"""
-    ensure_web_log_table()
-    users = fetch_all_android_users()
+    users = fetch_all_users()
     target_user = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == folder), None)
-
     full_name = target_user["full_name"] if target_user else entity_id
     registered_photo_path = target_user["local_photo"] if target_user else None
 
-    conn = get_db_connection()
-
-    # 1. Từ chối ngay nếu Sinh viên CHƯA ĐĂNG KÝ ảnh đại diện trong CSDL
     if not registered_photo_path or not os.path.exists(registered_photo_path):
-        fail_msg = f"TỪ CHỐI ĐIỂM DANH: Sinh viên {full_name} chưa đăng ký ảnh đại diện mẫu trong CSDL! Vui lòng nhấn 'Chụp Đăng ký' trước."
-        conn.execute("""
-            INSERT INTO web_liveness_logs (entity_id, folder, full_name, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason)
-            VALUES (?, ?, ?, 'FAILED', 0.0, 0.0, 0.0, 0.0, 'Chưa đăng ký ảnh mẫu')
-        """, (entity_id, folder, full_name))
-        conn.commit()
-        conn.close()
-        return JSONResponse(status_code=200, content={
-            "success": False,
-            "is_matched": False,
-            "requires_registration": True,
-            "message": f"❌ {fail_msg}"
-        })
+        msg = f"TỪ CHỐI ĐIỂM DANH: {full_name} chưa đăng ký ảnh đại diện mẫu!"
+        save_liveness_log(entity_id, folder, full_name, "FAILED", msg)
+        return JSONResponse(status_code=200, content={"success": False, "is_matched": False, "requires_registration": True, "message": f"❌ {msg}"})
 
     img_base = decode_image(await baseline_file.read())
     img_red = decode_image(await red_flash_file.read())
     img_blue = decode_image(await blue_flash_file.read())
 
-    # 2. Bước A: Phân tích phổ màu phản xạ chớp sáng Screen Flash
+    # 1. Kiểm tra Flash Red/Blue
     rgb_base = extract_face_core_rgb(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
     rgb_red = extract_face_core_rgb(img_red, bbox_x, bbox_y, bbox_w, bbox_h)
     rgb_blue = extract_face_core_rgb(img_blue, bbox_x, bbox_y, bbox_w, bbox_h)
 
     flash_passed, shift_score, flash_msg = evaluate_red_blue_ratio_cycle(rgb_base, rgb_red, rgb_blue)
     if not flash_passed:
-        conn.execute("""
-            INSERT INTO web_liveness_logs (entity_id, folder, full_name, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason)
-            VALUES (?, ?, ?, 'FAILED', 0.0, 1.0, ?, 0.0, ?)
-        """, (entity_id, folder, full_name, shift_score, flash_msg))
-        conn.commit()
-        conn.close()
+        save_liveness_log(entity_id, folder, full_name, "FAILED", flash_msg, shift_score=shift_score)
         return JSONResponse(status_code=200, content={"success": False, "message": f"❌ {flash_msg}"})
 
-    # 3. Bước B: Phân tích AI MiniVision Passive Anti-Spoofing (2.7x Crop)
+    # 2. Kiểm tra MiniVision Anti-Spoofing (Tự động thử 2.7x Crop, Tight Crop và Full Base)
     expanded_crop = crop_expanded_face_2_7x(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
-    is_real, real_score, spoof_score = anti_spoof_helper.classify_face(expanded_crop)
+    anti_spoof_res = anti_spoof_helper.classify_face(expanded_crop)
 
-    if not is_real:
-        fail_reason = f"Phát hiện video/ảnh giả mạo! (Score: {spoof_score:.2f})"
-        conn.execute("""
-            INSERT INTO web_liveness_logs (entity_id, folder, full_name, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason)
-            VALUES (?, ?, ?, 'FAILED', ?, ?, ?, 0.0, ?)
-        """, (entity_id, folder, full_name, round(real_score, 3), round(spoof_score, 3), shift_score, fail_reason))
-        conn.commit()
-        conn.close()
-        return JSONResponse(status_code=200, content={"success": False, "message": f"❌ {fail_reason}"})
+    if not anti_spoof_res.is_real:
+        tight_crop = crop_tight_face_1_0x(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
+        res_tight = anti_spoof_helper.classify_face(tight_crop)
+        if res_tight.is_real:
+            anti_spoof_res = res_tight
+        else:
+            res_base = anti_spoof_helper.classify_face(img_base)
+            if res_base.is_real:
+                anti_spoof_res = res_base
 
-    # 4. Bước C: So khớp danh tính MobileFaceNet 1:1 với Ảnh đại diện gốc
+    if not anti_spoof_res.is_real:
+        msg = f"Phát hiện video/ảnh giả mạo! (Score: {anti_spoof_res.spoof_score:.2f})"
+        save_liveness_log(entity_id, folder, full_name, "FAILED", msg, real_score=anti_spoof_res.real_score, shift_score=shift_score)
+        return JSONResponse(status_code=200, content={"success": False, "message": f"❌ {msg}"})
+
+    # 3. So khớp MobileFaceNet 1:1 (1.0x Tight Crop)
     ref_img = cv2.imread(registered_photo_path)
-    tight_crop = crop_tight_face_1_0x(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
+    face_current = get_face_crop_for_matching(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
+    emb_current = face_match_helper.get_face_embedding(face_current)
+    emb_ref = face_match_helper.get_face_embedding(ref_img)
 
-    raw_similarity = face_match_helper.compute_max_similarity(tight_crop, ref_img)
-    similarity_val = float(raw_similarity)
+    matched, similarity = face_match_helper.compare_faces(emb_ref, emb_current)
+    sim_val = float(similarity or 0.0)
 
-    if similarity_val < face_match_helper.MATCH_THRESHOLD:
-        fail_reason = f"SAI KHUÔN MẶT! Khuôn mặt đứng trước camera không trùng khớp với ảnh đại diện của {full_name} (Độ giống: {similarity_val * 100:.1f}%)"
-        conn.execute("""
-            INSERT INTO web_liveness_logs (entity_id, folder, full_name, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason)
-            VALUES (?, ?, ?, 'FAILED', ?, ?, ?, ?, 'Sai khuôn mặt')
-        """, (entity_id, folder, full_name, round(real_score, 3), round(spoof_score, 3), shift_score, round(similarity_val, 4)))
-        conn.commit()
-        conn.close()
-        return JSONResponse(status_code=200, content={"success": False, "is_matched": False, "message": f"❌ {fail_reason}"})
+    if not matched:
+        msg = f"SAI KHUÔN MẶT! Không khớp với {full_name} (Độ giống: {sim_val * 100:.1f}%)"
+        save_liveness_log(entity_id, folder, full_name, "FAILED", msg, real_score=anti_spoof_res.real_score, shift_score=shift_score, match_similarity=sim_val)
+        return JSONResponse(status_code=200, content={"success": False, "is_matched": False, "message": f"❌ {msg}"})
 
-    # ĐIỂM DANH THÀNH CÔNG THỎA MÃN CẢ 3 LỚP
-    success_msg = f"✅ Liveness & So khớp khuôn mặt THÀNH CÔNG! Đã xác nhận điểm danh cho {full_name} (Độ giống: {similarity_val * 100:.1f}%)"
-    conn.execute("""
-        INSERT INTO web_liveness_logs (entity_id, folder, full_name, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason)
-        VALUES (?, ?, ?, 'PASSED', ?, ?, ?, ?, 'Hợp lệ')
-    """, (entity_id, folder, full_name, round(real_score, 3), round(spoof_score, 3), shift_score, round(similarity_val, 4)))
-    conn.commit()
-    conn.close()
-
+    success_msg = f"✅ Xác thực thành công cho {full_name} (Độ giống: {sim_val * 100:.1f}%)"
+    save_liveness_log(entity_id, folder, full_name, "PASSED", "Hợp lệ", real_score=anti_spoof_res.real_score, shift_score=shift_score, match_similarity=sim_val, subject_id=subject_id)
     return JSONResponse(status_code=200, content={
         "success": True,
         "is_matched": True,
         "message": success_msg,
         "metrics": {
-            "real_score": round(real_score, 3),
+            "real_score": round(anti_spoof_res.real_score, 3),
+            "spoof_score": round(anti_spoof_res.spoof_score, 3),
             "shift_score": shift_score,
-            "match_similarity": round(similarity_val, 4)
+            "match_similarity": round(sim_val, 4)
         }
     })
 
-@app.post("/api/v1/log-client-fail")
-async def log_client_fail(
-        entity_id: str = Form(...),
-        folder: str = Form("students"),
-        reason: str = Form(...)
-):
-    """Ghi nhận lỗi từ Client State Machine (Freeze frame, Splice cut, Timeout, 3D Parallax)"""
-    ensure_web_log_table()
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    users = fetch_all_android_users()
-    target_user = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == folder), None)
-    full_name = target_user["full_name"] if target_user else entity_id
 
-    conn.execute("""
-        INSERT INTO web_liveness_logs (entity_id, folder, full_name, liveness_status, real_score, spoof_score, shift_score, match_similarity, reason)
-        VALUES (?, ?, ?, 'FAILED', 0.0, 1.0, 0.0, 0.0, ?)
-    """, (entity_id, folder, full_name, reason))
-    conn.commit()
-    conn.close()
-    return {"success": True, "message": "Đã ghi nhận log thất bại"}
+# ==================== API ĐỘC LẬP CHO 2 MODEL (DÀNH CHO WEB CHÍNH) ====================
+
+@app.post("/api/v1/ai/anti-spoof")
+async def api_anti_spoof(
+        image: UploadFile = File(...),
+        bbox_x: Optional[float] = Form(None),
+        bbox_y: Optional[float] = Form(None),
+        bbox_w: Optional[float] = Form(None),
+        bbox_h: Optional[float] = Form(None)
+):
+    """Chạy độc lập model minivision_anti_spoof.tflite (tự crop 2.7x nếu có bbox)."""
+    img_bgr = decode_image(await image.read())
+    target = crop_expanded_face_2_7x(img_bgr, bbox_x, bbox_y, bbox_w, bbox_h) if all(v is not None for v in (bbox_x, bbox_y, bbox_w, bbox_h)) else img_bgr
+    res = anti_spoof_helper.classify_face(target)
+    return {"success": True, "result": res.to_dict()}
+
+
+@app.post("/api/v1/ai/face-match")
+async def api_face_match(image1: UploadFile = File(...), image2: UploadFile = File(...)):
+    """Chạy độc lập model mobile_face_net.tflite để so sánh 2 ảnh khuôn mặt."""
+    img1 = decode_image(await image1.read())
+    img2 = decode_image(await image2.read())
+    c1 = detect_and_crop_face_static(img1)
+    c2 = detect_and_crop_face_static(img2)
+    emb1 = face_match_helper.get_face_embedding(c1 if c1 is not None else img1)
+    emb2 = face_match_helper.get_face_embedding(c2 if c2 is not None else img2)
+    matched, similarity = face_match_helper.compare_faces(emb1, emb2)
+    return {
+        "success": True,
+        "is_matched": matched,
+        "similarity": round(float(similarity or 0.0), 4),
+        "threshold": face_match_helper.MATCH_THRESHOLD
+    }
+
+
+@app.post("/api/v1/ai/check-duplicate")
+async def api_check_duplicate(
+        image: UploadFile = File(...),
+        current_entity_id: str = Form(""),
+        folder: str = Form("students")
+):
+    """Kiểm tra ảnh khuôn mặt có bị trùng với tài khoản khác trong hệ thống không."""
+    img_bgr = decode_image(await image.read())
+    cropped = detect_and_crop_face_static(img_bgr)
+    dup = check_if_face_already_exists(cropped if cropped is not None else img_bgr, current_entity_id, folder)
+    if dup:
+        return {"success": True, "is_duplicate": True, "duplicate_id": dup[0], "similarity": round(dup[1], 4)}
+    return {"success": True, "is_duplicate": False}
+
 
 if __name__ == "__main__":
     import uvicorn

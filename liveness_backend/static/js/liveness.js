@@ -403,8 +403,15 @@ async function triggerEdgeFlashChallenge() {
 }
 
 async function captureRegisterMode() {
-    const { entityId, folder } = getSelectedEntity();
-    const bboxSnapshot = latestFaceBBox || { x: 0.25, y: 0.20, w: 0.50, h: 0.60 };
+    if (!latestFaceBBox) {
+            const msg = "❌ Không tìm thấy khuôn mặt! Vui lòng đưa mặt vào khung hình trước khi chụp.";
+            instructionText.innerText = msg;
+            alert(msg);
+            return;
+        }
+
+        const { entityId, folder } = getSelectedEntity();
+        const bboxSnapshot = latestFaceBBox;
 
     instructionText.innerText = "⏳ Đang chụp ảnh đăng ký và đối soát khuôn mặt...";
 
