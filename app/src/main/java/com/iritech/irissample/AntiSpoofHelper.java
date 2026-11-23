@@ -24,8 +24,8 @@ public class AntiSpoofHelper {
 
     public static final String MODEL_FILE = "minivision_anti_spoof.tflite";
 
-    // Ngưỡng xác suất đánh giá người thật (Cân bằng an toàn >= 0.35f)
-    private static final float REAL_THRESHOLD = 0.35f;
+    // Ngưỡng xác suất đánh giá người thật (Mặc định >= 0.50f là người thật)
+    private static final float REAL_THRESHOLD = 0.50f;
 
     private Interpreter tflite;
     private boolean isModelLoaded = false;
@@ -199,23 +199,12 @@ public class AntiSpoofHelper {
             float spoofScore;
 
             if (outputClassCount == 3) {
-                // Hỗ trợ linh hoạt cả 2 chuẩn class mapping của MiniVision:
-                float realCandidate1 = probs[1];
-                float realCandidate0 = probs[0];
-
-                if (realCandidate1 >= realCandidate0 && realCandidate1 >= probs[2]) {
-                    realScore  = realCandidate1;
-                    spoofScore = Math.max(probs[0], probs[2]);
-                } else if (realCandidate0 >= realCandidate1 && realCandidate0 >= probs[2]) {
-                    realScore  = realCandidate0;
-                    spoofScore = Math.max(probs[1], probs[2]);
-                } else {
-                    realScore  = Math.max(probs[0], probs[1]);
-                    spoofScore = probs[2];
-                }
+                // Chuẩn MiniVision Silent-Face-Anti-Spoofing: Class 1 luôn là REAL PERSON (Người thật)
+                realScore  = probs[1];
+                spoofScore = probs[0] + probs[2];
             } else {
-                realScore  = Math.max(probs[0], probs[1]);
-                spoofScore = Math.min(probs[0], probs[1]);
+                realScore  = probs[1];
+                spoofScore = probs[0];
             }
 
             boolean isReal = realScore >= REAL_THRESHOLD;

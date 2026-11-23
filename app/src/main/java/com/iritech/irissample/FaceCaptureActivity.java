@@ -835,7 +835,7 @@ public class FaceCaptureActivity extends AppCompatActivity
                 && livenessLogic.getCurrentState() != LivenessLogic.State.IDLE
                 && livenessLogic.getCurrentState() != LivenessLogic.State.WAITING_FOR_FACE);
 
-        int tolerance = isPerformingChallenge ? 130 : 90;
+        int tolerance = isPerformingChallenge ? 110 : 65;
 
         boolean isCenterInside = (faceCenterX >= validAreaOnView.left)
                 && (faceCenterX <= validAreaOnView.right)
@@ -849,7 +849,7 @@ public class FaceCaptureActivity extends AppCompatActivity
 
         float faceWidth  = mappedRight - mappedLeft;
         float validWidth = validAreaOnView.width();
-        boolean isProperSize = (faceWidth / validWidth) >= 0.22f;
+        boolean isProperSize = (faceWidth / validWidth) >= 0.35f;
 
         return isCenterInside && isInsideX && isInsideY && isProperSize;
     }
