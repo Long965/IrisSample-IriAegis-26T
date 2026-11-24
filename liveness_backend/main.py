@@ -274,6 +274,27 @@ def get_face_crop_for_matching(img_bgr: np.ndarray, bx: Optional[float] = None, 
         return crop_tight_face_1_0x(img_bgr, bx, by, bw, bh)
     return img_bgr
 
+def check_face_lighting(face_bgr: np.ndarray, min_brightness: float = 65.0, max_brightness: float = 225.0) -> Tuple[bool, str]:
+    """Kiểm tra độ sáng trung bình trên vùng khuôn mặt (kênh Y trong không gian YCrCb)."""
+    ycrcb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2YCrCb)
+    mean_luma = float(np.mean(ycrcb[:, :, 0]))
+    if mean_luma < min_brightness:
+        return False, f"❌ Ánh sáng quá yếu ! Vui lòng bật đèn hoặc đến nơi đủ sáng rồi thử lại."
+    if mean_luma > max_brightness:
+        return False, f"❌ Ánh sáng quá chói ! Vui lòng tránh ngược sáng hoặc giảm độ chói."
+    return True, "OK"
+
+
+def normalize_face_lighting(face_bgr: np.ndarray) -> np.ndarray:
+    """Cân bằng ánh sáng cục bộ bằng CLAHE trên kênh L (LAB) để MobileFaceNet ổn định hơn khi đổi ánh sáng."""
+    if face_bgr is None or face_bgr.size == 0:
+        return face_bgr
+    lab = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2LAB)
+    l_ch, a_ch, b_ch = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l_norm = clahe.apply(l_ch)
+    merged = cv2.merge((l_norm, a_ch, b_ch))
+    return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
 
 def crop_tight_face_1_0x(img_bgr: np.ndarray, bx: float, by: float, bw: float, bh: float) -> np.ndarray:
     h, w, _ = img_bgr.shape
@@ -352,7 +373,8 @@ def check_if_face_already_exists(
     if not face_match_helper.is_model_loaded or new_face_bgr is None or new_face_bgr.size == 0:
         return None
 
-    new_emb = face_match_helper.get_face_embedding(new_face_bgr)
+    # [MỚI] Chuẩn hóa ánh sáng trước khi trích xuất embedding
+    new_emb = face_match_helper.get_face_embedding(normalize_face_lighting(new_face_bgr))
     if new_emb is None:
         return None
 
@@ -380,7 +402,8 @@ def check_if_face_already_exists(
             ref_img = cv2.imread(file_full_path)
             if ref_img is None or ref_img.size == 0:
                 continue
-            exist_emb = face_match_helper.get_face_embedding(ref_img)
+            # [MỚI] Chuẩn hóa ánh sáng cho ảnh mẫu cũ khi so trùng
+            exist_emb = face_match_helper.get_face_embedding(normalize_face_lighting(ref_img))
             if exist_emb is not None:
                 matched, similarity = face_match_helper.compare_faces(exist_emb, new_emb)
                 if matched and similarity is not None:
@@ -405,9 +428,15 @@ def validate_and_save_photo(
     # Trích xuất khuôn mặt chuẩn bằng OpenCV Haar Cascade (khớp 1:1 ML Kit FaceDetector ở AddStudentActivity)
     face_crop = get_face_crop_for_matching(full_img_bgr, bx, by, bw, bh)
 
-    new_emb = face_match_helper.get_face_embedding(face_crop)
+    # [MỚI] Chặn đăng ký nếu ảnh quá tối hoặc quá chói
+    light_ok, light_msg = check_face_lighting(face_crop)
+    if not light_ok:
+        return False, light_msg, {}
+
+    # [MỚI] Chuẩn hóa ánh sáng trước khi trích xuất đặc trưng khuôn mặt
+    new_emb = face_match_helper.get_face_embedding(normalize_face_lighting(face_crop))
     if new_emb is None:
-        new_emb = face_match_helper.get_face_embedding(full_img_bgr)
+        new_emb = face_match_helper.get_face_embedding(normalize_face_lighting(full_img_bgr))
 
     if new_emb is None:
         return False, "❌ Lỗi: Không trích xuất được đặc trưng khuôn mặt.", {}
@@ -419,7 +448,8 @@ def validate_and_save_photo(
     if existing_file and os.path.exists(existing_file):
         old_img = cv2.imread(existing_file)
         if old_img is not None:
-            old_emb = face_match_helper.get_face_embedding(old_img)
+            # [MỚI] Chuẩn hóa ánh sáng cho ảnh cũ khi so khớp chính chủ
+            old_emb = face_match_helper.get_face_embedding(normalize_face_lighting(old_img))
             if old_emb is not None:
                 is_owner, owner_sim = face_match_helper.compare_faces(old_emb, new_emb)
                 if not is_owner:
@@ -522,6 +552,13 @@ async def register_face(
 ):
     try:
         img_bgr = decode_image(await face_image.read())
+
+        # [MỚI] Kiểm tra ánh sáng vùng khuôn mặt trước khi chạy Haar Cascade
+        face_region = crop_tight_face_1_0x(img_bgr, bbox_x, bbox_y, bbox_w, bbox_h)
+        light_ok, light_msg = check_face_lighting(face_region)
+        if not light_ok:
+            return JSONResponse(status_code=200, content={"success": False, "message": light_msg})
+
         if detect_and_crop_face_static(img_bgr) is None:
             return JSONResponse(status_code=200, content={
                 "success": False,
@@ -543,7 +580,12 @@ async def upload_student_photo(
 ):
     try:
         img_bgr = decode_image(await photo_file.read())
+
         if detect_and_crop_face_static(img_bgr) is None:
+            # [MỚI] Nếu không thấy mặt, kiểm tra xem có phải do ảnh quá tối/chói không
+            light_ok, light_msg = check_face_lighting(img_bgr)
+            if not light_ok:
+                return JSONResponse(status_code=200, content={"success": False, "message": light_msg})
             return JSONResponse(status_code=200, content={
                 "success": False,
                 "message": "❌ Không tìm thấy khuôn mặt trong ảnh này! Vui lòng chọn ảnh rõ mặt."
@@ -554,6 +596,7 @@ async def upload_student_photo(
     except Exception as e:
         logger.error(f"Lỗi upload_student_photo: {e}", exc_info=True)
         return JSONResponse(status_code=200, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
+
 
 @app.post("/api/v1/verify-liveness")
 async def verify_liveness(
@@ -611,11 +654,11 @@ async def verify_liveness(
         save_liveness_log(entity_id, folder, full_name, "FAILED", msg, real_score=anti_spoof_res.real_score, shift_score=shift_score)
         return JSONResponse(status_code=200, content={"success": False, "message": f"❌ {msg}"})
 
-    # 3. So khớp MobileFaceNet 1:1 (1.0x Tight Crop)
+    # 3. So khớp MobileFaceNet 1:1 (1.0x Tight Crop + chuẩn hóa ánh sáng CLAHE)
     ref_img = cv2.imread(registered_photo_path)
     face_current = get_face_crop_for_matching(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
-    emb_current = face_match_helper.get_face_embedding(face_current)
-    emb_ref = face_match_helper.get_face_embedding(ref_img)
+    emb_current = face_match_helper.get_face_embedding(normalize_face_lighting(face_current))
+    emb_ref = face_match_helper.get_face_embedding(normalize_face_lighting(ref_img))
 
     matched, similarity = face_match_helper.compare_faces(emb_ref, emb_current)
     sim_val = float(similarity or 0.0)
@@ -645,10 +688,10 @@ async def verify_liveness(
 @app.post("/api/v1/ai/anti-spoof")
 async def api_anti_spoof(
         image: UploadFile = File(...),
-        bbox_x: Optional[float] = Form(None),
-        bbox_y: Optional[float] = Form(None),
-        bbox_w: Optional[float] = Form(None),
-        bbox_h: Optional[float] = Form(None)
+        bbox_x: float = Form(0.25),
+        bbox_y: float = Form(0.20),
+        bbox_w: float = Form(0.50),
+        bbox_h: float = Form(0.60)
 ):
     """Chạy độc lập model minivision_anti_spoof.tflite (tự crop 2.7x nếu có bbox)."""
     img_bgr = decode_image(await image.read())

@@ -19,6 +19,11 @@ const HEAD_SHAKE_LEFT_ANGLE = -11.5;
 const HEAD_SHAKE_RIGHT_ANGLE = 11.5;
 const HEAD_CENTER_ANGLE = 10.0;
 
+// Cấu hình ước lượng khoảng cách camera (cm)
+const MAX_DISTANCE_CM = 30.0;
+const REAL_IPD_CM = 6.3;        // Khoảng cách trung bình giữa 2 đồng tử (cm)
+const FOCAL_LENGTH_NORM = 0.86; // Tiêu cự chuẩn hóa cho webcam phổ thông (~60° FOV)
+
 const STATIC_EULER_THRESHOLD = 0.01;
 const STATIC_NOSE_THRESHOLD = 0.0003; // Tọa độ chuẩn hóa [0..1] tương đương ~0.15px trên khung 640px
 const MAX_STATIC_FRAMES_ALLOWED = 28;
@@ -76,10 +81,12 @@ async function fetchUsers() {
                 return `<option value="${u.entity_id}" data-folder="${u.folder}">[${u.folder.toUpperCase()}] ${u.entity_id} - ${u.full_name} (${statusTag})</option>`;
             }).join('');
         } else {
+            usersList = [];
             userSelect.innerHTML = `<option value="">-- Không tìm thấy dữ liệu trong IrisDatabase.db (${data.message || '0 bản ghi'}) --</option>`;
         }
     } catch (e) {
         console.error("Lỗi gọi /api/v1/users:", e);
+        usersList = [];
         userSelect.innerHTML = `<option value="">-- Lỗi kết nối API /api/v1/users --</option>`;
     }
 }
@@ -157,7 +164,19 @@ function getFaceMetrics(landmarks) {
 
     const roll = Math.atan2(rightEyeOuter.y - leftEyeOuter.y, rightEyeOuter.x - leftEyeOuter.x) * (180 / Math.PI);
 
-    return { bbox, ear, yaw, pitch, roll, nose, leftEyeOuter, rightEyeOuter };
+    // 4. Ước lượng khoảng cách từ khuôn mặt đến camera (cm)
+    let distanceCm = 0;
+    const leftIris = landmarks[468];
+    const rightIris = landmarks[473];
+    if (leftIris && rightIris) {
+        const ipdNorm = dist2D(leftIris, rightIris);
+        // Bù góc quay đầu (yaw) để khi lắc đầu không bị báo sai khoảng cách
+        const cosYaw = Math.max(0.5, Math.cos((yaw * Math.PI) / 180.0));
+        const adjustedIpd = ipdNorm / cosYaw;
+        distanceCm = (REAL_IPD_CM * FOCAL_LENGTH_NORM) / (adjustedIpd + 1e-6);
+    }
+
+    return { bbox, ear, yaw, pitch, roll, nose, leftEyeOuter, rightEyeOuter, distanceCm };
 }
 
 // Kiểm tra khuôn mặt nằm vừa vặn trong khung Oval (tương đương checkFaceInCircle trên Android)
@@ -192,7 +211,14 @@ function onFaceMeshResults(results) {
         return;
     }
 
-    // 0. Kiểm tra khuôn mặt nằm trong khung Oval
+    // 0a. Kiểm tra khoảng cách khuôn mặt đến camera (> 30cm)
+    if (m.distanceCm > MAX_DISTANCE_CM) {
+        faceOvalRing.className = "w-56 h-72 rounded-[50%] border-4 invalid";
+        instructionText.innerText = `Vui lòng đưa khuôn mặt lại gần camera hơn (~${Math.round(m.distanceCm)}cm > 30cm)`;
+        return;
+    }
+
+    // 0b. Kiểm tra khuôn mặt nằm trong khung Oval
     if (!checkFaceInOval(m.bbox)) {
         faceOvalRing.className = "w-56 h-72 rounded-[50%] border-4 border-white";
         instructionText.innerText = "Vui lòng đặt khuôn mặt vừa vặn vào trong khung";
@@ -404,14 +430,14 @@ async function triggerEdgeFlashChallenge() {
 
 async function captureRegisterMode() {
     if (!latestFaceBBox) {
-            const msg = "❌ Không tìm thấy khuôn mặt! Vui lòng đưa mặt vào khung hình trước khi chụp.";
-            instructionText.innerText = msg;
-            alert(msg);
-            return;
-        }
+        const msg = "❌ Không tìm thấy khuôn mặt! Vui lòng đưa mặt vào khung hình trước khi chụp.";
+        instructionText.innerText = msg;
+        alert(msg);
+        return;
+    }
 
-        const { entityId, folder } = getSelectedEntity();
-        const bboxSnapshot = latestFaceBBox;
+    const { entityId, folder } = getSelectedEntity();
+    const bboxSnapshot = latestFaceBBox;
 
     instructionText.innerText = "⏳ Đang chụp ảnh đăng ký và đối soát khuôn mặt...";
 
@@ -507,6 +533,25 @@ function captureWebcamBlob() {
 // ==================== ĐIỀU KHIỂN TRẠNG THÁI ====================
 
 function startCheckinMode() {
+    const { entityId, folder } = getSelectedEntity();
+    const selectedUser = usersList.find(u => u.entity_id === entityId && u.folder === folder);
+
+    // Chặn nếu chưa chọn đối tượng hoặc đối tượng chưa có ảnh mẫu
+    if (!selectedUser) {
+        const msg = "❌ Vui lòng chọn đối tượng trước khi xác thực!";
+        resetLivenessState();
+        instructionText.innerText = msg;
+        alert(msg);
+        return;
+    }
+    if (!selectedUser.has_photo) {
+        const msg = `⚠️ ${selectedUser.full_name} (${entityId}) chưa có ảnh mẫu! Vui lòng chụp hoặc tải ảnh đăng ký trước khi check-in Liveness.`;
+        resetLivenessState();
+        instructionText.innerText = msg;
+        alert(msg);
+        return;
+    }
+
     resetLivenessState();
     changeState(State.WAITING_FOR_FACE, "Vui lòng đưa khuôn mặt vào khung hình");
     updateStepUI('step-1', 'active', 'Đang định vị...');
