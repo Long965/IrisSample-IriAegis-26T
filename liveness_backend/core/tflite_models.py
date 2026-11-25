@@ -209,7 +209,7 @@ class FaceMatchHelper:
     EMBEDDING_SIZE = 192
 
     # Ngưỡng khuyến nghị tối ưu cho MobileFaceNet: 0.75 (similarity > 0.75)
-    MATCH_THRESHOLD = 0.75
+    MATCH_THRESHOLD = 0.65
 
     def __init__(self, model_path: str):
         self._lock = threading.Lock()

@@ -6,7 +6,7 @@ from typing import Tuple, Optional, List, Dict, Any
 import cv2
 import numpy as np
 
-from fastapi import FastAPI, Request, File, UploadFile, Form
+from fastapi import FastAPI, Request, Response, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -32,7 +32,7 @@ os.makedirs(os.path.join(BASE_DIR, "models"), exist_ok=True)
 app = FastAPI(
     title="Web Liveness Detection & Face Recognition API (1:1 Android Port)",
     description="Backend FastAPI đồng bộ 1:1 với AntiSpoofHelper, FaceMatchHelper, LivenessLogic, FaceCaptureActivity, AddStudentActivity, AdminDetailActivity và DatabaseHelper.",
-    version="5.0.0"
+    version="5.1.0"
 )
 
 app.add_middleware(
@@ -149,14 +149,14 @@ def save_liveness_log(
         """,
         (entity_id, folder, full_name, status, real_score, shift_score, match_similarity, reason, ts)
     )
-    # Nếu là sinh viên điểm danh PASSED -> ghi thêm vào checkin_history chuẩn Android
+    # Nếu là sinh viên điểm danh PASSED -> ghi thêm vào checkin_history (chuẩn ngày YYYY-MM-DD đồng bộ Nhóm 1)
     if status == "PASSED" and folder == "students":
         conn.execute(
             """
             INSERT INTO checkin_history (student_id, subject_id, checkin_time, checkin_date)
             VALUES (?, ?, ?, ?)
             """,
-            (entity_id, subject_id or "WEB_CHECKIN", now.strftime("%H:%M:%S"), now.strftime("%d/%m/%Y"))
+            (entity_id, subject_id or "WEB_CHECKIN", now.strftime("%H:%M:%S"), now.strftime("%Y-%m-%d"))
         )
     conn.commit()
     conn.close()
@@ -231,17 +231,17 @@ def fetch_all_users() -> List[Dict[str, Any]]:
     return users
 
 
-# ==================== XỬ LÝ ẢNH & CROP (1:1 FaceCaptureActivity / AddStudentActivity) ====================
+# ==================== XỬ LÝ ẢNH & CROP ====================
 
 def decode_image(file_bytes: bytes) -> np.ndarray:
     img = cv2.imdecode(np.frombuffer(file_bytes, np.uint8), cv2.IMREAD_COLOR)
     if img is None:
-        raise ValueError("Không thể giải mã ảnh")
+        raise ValueError("File tải lên không phải định dạng ảnh hợp lệ")
     return img
 
 
 def detect_and_crop_face_static(img_bgr: np.ndarray, margin: float = 0.35) -> Optional[np.ndarray]:
-    """Tương đương ML Kit FaceDetector ở AddStudentActivity & AdminDetailActivity: Có margin padding (35%-40%) để lấy trán, tóc, cằm và má."""
+    """Tương đương ML Kit FaceDetector ở AddStudentActivity & AdminDetailActivity."""
     if img_bgr is None or img_bgr.size == 0:
         return None
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
@@ -263,8 +263,8 @@ def detect_and_crop_face_static(img_bgr: np.ndarray, margin: float = 0.35) -> Op
     return cropped if cropped.size > 0 else img_bgr
 
 
-# 1. Thống nhất 1 hàm cắt ảnh chuẩn (margin=0.20) cho cả Đăng ký, Upload và Xác thực
 def get_face_crop_for_matching(img_bgr: np.ndarray, bx: Optional[float] = None, by: Optional[float] = None, bw: Optional[float] = None, bh: Optional[float] = None) -> np.ndarray:
+    """Thống nhất 1 hàm cắt ảnh chuẩn (margin=0.20) cho cả Đăng ký, Upload, Check-duplicate và Xác thực."""
     if img_bgr is None or img_bgr.size == 0:
         return img_bgr
     cropped_haar = detect_and_crop_face_static(img_bgr, margin=0.20)
@@ -274,14 +274,15 @@ def get_face_crop_for_matching(img_bgr: np.ndarray, bx: Optional[float] = None, 
         return crop_tight_face_1_0x(img_bgr, bx, by, bw, bh)
     return img_bgr
 
+
 def check_face_lighting(face_bgr: np.ndarray, min_brightness: float = 65.0, max_brightness: float = 225.0) -> Tuple[bool, str]:
     """Kiểm tra độ sáng trung bình trên vùng khuôn mặt (kênh Y trong không gian YCrCb)."""
     ycrcb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2YCrCb)
     mean_luma = float(np.mean(ycrcb[:, :, 0]))
     if mean_luma < min_brightness:
-        return False, f"❌ Ánh sáng quá yếu ! Vui lòng bật đèn hoặc đến nơi đủ sáng rồi thử lại."
+        return False, f"❌ Ánh sáng quá yếu ({mean_luma:.0f}/255)! Vui lòng bật đèn hoặc đến nơi đủ sáng rồi thử lại."
     if mean_luma > max_brightness:
-        return False, f"❌ Ánh sáng quá chói ! Vui lòng tránh ngược sáng hoặc giảm độ chói."
+        return False, f"❌ Ánh sáng quá chói ({mean_luma:.0f}/255)! Vui lòng tránh ngược sáng hoặc giảm độ chói."
     return True, "OK"
 
 
@@ -295,6 +296,7 @@ def normalize_face_lighting(face_bgr: np.ndarray) -> np.ndarray:
     l_norm = clahe.apply(l_ch)
     merged = cv2.merge((l_norm, a_ch, b_ch))
     return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
+
 
 def crop_tight_face_1_0x(img_bgr: np.ndarray, bx: float, by: float, bw: float, bh: float) -> np.ndarray:
     h, w, _ = img_bgr.shape
@@ -363,7 +365,7 @@ def evaluate_red_blue_ratio_cycle(
     return True, round(shift, 4), "Hợp lệ"
 
 
-# ==================== CHECK TRÙNG & CHÍNH CHỦ (1:1 AddStudent / AdminDetail) ====================
+# ==================== CHECK TRÙNG & CHÍNH CHỦ ====================
 
 def check_if_face_already_exists(
         new_face_bgr: np.ndarray,
@@ -373,7 +375,6 @@ def check_if_face_already_exists(
     if not face_match_helper.is_model_loaded or new_face_bgr is None or new_face_bgr.size == 0:
         return None
 
-    # [MỚI] Chuẩn hóa ánh sáng trước khi trích xuất embedding
     new_emb = face_match_helper.get_face_embedding(normalize_face_lighting(new_face_bgr))
     if new_emb is None:
         return None
@@ -402,7 +403,6 @@ def check_if_face_already_exists(
             ref_img = cv2.imread(file_full_path)
             if ref_img is None or ref_img.size == 0:
                 continue
-            # [MỚI] Chuẩn hóa ánh sáng cho ảnh mẫu cũ khi so trùng
             exist_emb = face_match_helper.get_face_embedding(normalize_face_lighting(ref_img))
             if exist_emb is not None:
                 matched, similarity = face_match_helper.compare_faces(exist_emb, new_emb)
@@ -425,15 +425,12 @@ def validate_and_save_photo(
     target_user = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == save_folder), None)
     full_name = target_user["full_name"] if target_user else entity_id
 
-    # Trích xuất khuôn mặt chuẩn bằng OpenCV Haar Cascade (khớp 1:1 ML Kit FaceDetector ở AddStudentActivity)
     face_crop = get_face_crop_for_matching(full_img_bgr, bx, by, bw, bh)
 
-    # [MỚI] Chặn đăng ký nếu ảnh quá tối hoặc quá chói
     light_ok, light_msg = check_face_lighting(face_crop)
     if not light_ok:
         return False, light_msg, {}
 
-    # [MỚI] Chuẩn hóa ánh sáng trước khi trích xuất đặc trưng khuôn mặt
     new_emb = face_match_helper.get_face_embedding(normalize_face_lighting(face_crop))
     if new_emb is None:
         new_emb = face_match_helper.get_face_embedding(normalize_face_lighting(full_img_bgr))
@@ -444,11 +441,10 @@ def validate_and_save_photo(
     target_dir = os.path.join(UPLOAD_DIR, save_folder)
     existing_file = resolve_local_photo_path(entity_id, save_folder, target_user["local_photo"] if target_user else None)
 
-    # Bước 1: Kiểm tra chính chủ nếu đã có ảnh cũ (AddStudentActivity.java dòng 244)
+    # Bước 1: Kiểm tra chính chủ nếu đã có ảnh cũ
     if existing_file and os.path.exists(existing_file):
         old_img = cv2.imread(existing_file)
         if old_img is not None:
-            # [MỚI] Chuẩn hóa ánh sáng cho ảnh cũ khi so khớp chính chủ
             old_emb = face_match_helper.get_face_embedding(normalize_face_lighting(old_img))
             if old_emb is not None:
                 is_owner, owner_sim = face_match_helper.compare_faces(old_emb, new_emb)
@@ -458,7 +454,7 @@ def validate_and_save_photo(
                         "similarity": round(float(owner_sim or 0.0), 4)
                     }
 
-    # Bước 2: Kiểm tra trùng khuôn mặt với sinh viên khác (checkIfFaceAlreadyExists)
+    # Bước 2: Kiểm tra trùng khuôn mặt với sinh viên khác
     dup_res = check_if_face_already_exists(face_crop, entity_id, save_folder)
     if dup_res is None and face_crop.shape != full_img_bgr.shape:
         dup_res = check_if_face_already_exists(full_img_bgr, entity_id, save_folder)
@@ -497,7 +493,12 @@ def validate_and_save_photo(
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
 
 
 @app.get("/health")
@@ -513,9 +514,14 @@ async def health_check():
 @app.get("/api/v1/users")
 async def get_users():
     try:
-        return {"success": True, "users": fetch_all_users()}
+        # Ẩn đường dẫn file nội bộ (local_photo) khỏi response để đảm bảo bảo mật
+        safe_users = [
+            {k: v for k, v in u.items() if k != "local_photo"}
+            for u in fetch_all_users()
+        ]
+        return {"success": True, "users": safe_users}
     except Exception as e:
-        return JSONResponse(status_code=200, content={"success": False, "message": str(e), "users": []})
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e), "users": []})
 
 
 @app.get("/api/v1/attendance-logs")
@@ -539,7 +545,6 @@ async def log_client_fail(
     return {"success": True}
 
 
-# 3. Sửa register_face và upload_student_photo: Truyền thẳng img_bgr GỐC vào validate_and_save_photo
 @app.post("/api/v1/register-face")
 async def register_face(
         entity_id: str = Form(...),
@@ -552,8 +557,10 @@ async def register_face(
 ):
     try:
         img_bgr = decode_image(await face_image.read())
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"success": False, "message": f"❌ {str(ve)}"})
 
-        # [MỚI] Kiểm tra ánh sáng vùng khuôn mặt trước khi chạy Haar Cascade
+    try:
         face_region = crop_tight_face_1_0x(img_bgr, bbox_x, bbox_y, bbox_w, bbox_h)
         light_ok, light_msg = check_face_lighting(face_region)
         if not light_ok:
@@ -564,12 +571,11 @@ async def register_face(
                 "success": False,
                 "message": "❌ Không tìm thấy khuôn mặt trong ảnh! Vui lòng thử lại."
             })
-        # Truyền ảnh gốc + bbox (không tự cắt trước để tránh Double Crop)
         success, message, extra = validate_and_save_photo(img_bgr, entity_id, folder, bbox_x, bbox_y, bbox_w, bbox_h)
         return JSONResponse(status_code=200, content={"success": success, "message": message, **extra})
     except Exception as e:
         logger.error(f"Lỗi register_face: {e}", exc_info=True)
-        return JSONResponse(status_code=200, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
+        return JSONResponse(status_code=500, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
 
 
 @app.post("/api/v1/upload-student-photo")
@@ -580,9 +586,11 @@ async def upload_student_photo(
 ):
     try:
         img_bgr = decode_image(await photo_file.read())
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"success": False, "message": f"❌ {str(ve)}"})
 
+    try:
         if detect_and_crop_face_static(img_bgr) is None:
-            # [MỚI] Nếu không thấy mặt, kiểm tra xem có phải do ảnh quá tối/chói không
             light_ok, light_msg = check_face_lighting(img_bgr)
             if not light_ok:
                 return JSONResponse(status_code=200, content={"success": False, "message": light_msg})
@@ -590,12 +598,11 @@ async def upload_student_photo(
                 "success": False,
                 "message": "❌ Không tìm thấy khuôn mặt trong ảnh này! Vui lòng chọn ảnh rõ mặt."
             })
-        # Truyền ảnh gốc vào (không tự cắt trước)
         success, message, extra = validate_and_save_photo(img_bgr, entity_id, folder)
         return JSONResponse(status_code=200, content={"success": success, "message": message, **extra})
     except Exception as e:
         logger.error(f"Lỗi upload_student_photo: {e}", exc_info=True)
-        return JSONResponse(status_code=200, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
+        return JSONResponse(status_code=500, content={"success": False, "message": f"❌ Lỗi Server: {str(e)}"})
 
 
 @app.post("/api/v1/verify-liveness")
@@ -613,17 +620,26 @@ async def verify_liveness(
 ):
     users = fetch_all_users()
     target_user = next((u for u in users if u["entity_id"] == entity_id and u["folder"] == folder), None)
-    full_name = target_user["full_name"] if target_user else entity_id
-    registered_photo_path = target_user["local_photo"] if target_user else None
+
+    if target_user is None:
+        msg = f"Không tìm thấy tài khoản {entity_id} trong hệ thống!"
+        save_liveness_log(entity_id, folder, entity_id, "FAILED", msg)
+        return JSONResponse(status_code=404, content={"success": False, "is_matched": False, "message": f"❌ {msg}"})
+
+    full_name = target_user["full_name"]
+    registered_photo_path = target_user["local_photo"]
 
     if not registered_photo_path or not os.path.exists(registered_photo_path):
         msg = f"TỪ CHỐI ĐIỂM DANH: {full_name} chưa đăng ký ảnh đại diện mẫu!"
         save_liveness_log(entity_id, folder, full_name, "FAILED", msg)
         return JSONResponse(status_code=200, content={"success": False, "is_matched": False, "requires_registration": True, "message": f"❌ {msg}"})
 
-    img_base = decode_image(await baseline_file.read())
-    img_red = decode_image(await red_flash_file.read())
-    img_blue = decode_image(await blue_flash_file.read())
+    try:
+        img_base = decode_image(await baseline_file.read())
+        img_red = decode_image(await red_flash_file.read())
+        img_blue = decode_image(await blue_flash_file.read())
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"success": False, "message": f"❌ {str(ve)}"})
 
     # 1. Kiểm tra Flash Red/Blue
     rgb_base = extract_face_core_rgb(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
@@ -635,19 +651,9 @@ async def verify_liveness(
         save_liveness_log(entity_id, folder, full_name, "FAILED", flash_msg, shift_score=shift_score)
         return JSONResponse(status_code=200, content={"success": False, "message": f"❌ {flash_msg}"})
 
-    # 2. Kiểm tra MiniVision Anti-Spoofing (Tự động thử 2.7x Crop, Tight Crop và Full Base)
+    # 2. Kiểm tra MiniVision Anti-Spoofing (chấm chặt trên khung 2.7x chuẩn MiniVision)
     expanded_crop = crop_expanded_face_2_7x(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
     anti_spoof_res = anti_spoof_helper.classify_face(expanded_crop)
-
-    if not anti_spoof_res.is_real:
-        tight_crop = crop_tight_face_1_0x(img_base, bbox_x, bbox_y, bbox_w, bbox_h)
-        res_tight = anti_spoof_helper.classify_face(tight_crop)
-        if res_tight.is_real:
-            anti_spoof_res = res_tight
-        else:
-            res_base = anti_spoof_helper.classify_face(img_base)
-            if res_base.is_real:
-                anti_spoof_res = res_base
 
     if not anti_spoof_res.is_real:
         msg = f"Phát hiện video/ảnh giả mạo! (Score: {anti_spoof_res.spoof_score:.2f})"
@@ -683,7 +689,7 @@ async def verify_liveness(
     })
 
 
-# ==================== API ĐỘC LẬP CHO 2 MODEL (DÀNH CHO WEB CHÍNH) ====================
+# ==================== API ĐỘC LẬP CHO 2 MODEL ====================
 
 @app.post("/api/v1/ai/anti-spoof")
 async def api_anti_spoof(
@@ -693,22 +699,39 @@ async def api_anti_spoof(
         bbox_w: float = Form(0.50),
         bbox_h: float = Form(0.60)
 ):
-    """Chạy độc lập model minivision_anti_spoof.tflite (tự crop 2.7x nếu có bbox)."""
-    img_bgr = decode_image(await image.read())
-    target = crop_expanded_face_2_7x(img_bgr, bbox_x, bbox_y, bbox_w, bbox_h) if all(v is not None for v in (bbox_x, bbox_y, bbox_w, bbox_h)) else img_bgr
+    """Chạy độc lập model minivision_anti_spoof.tflite (tự kiểm tra khuôn mặt và crop 2.7x nếu có bbox)."""
+    try:
+        img_bgr = decode_image(await image.read())
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"success": False, "message": f"❌ {str(ve)}"})
+
+    # Kiểm tra có khuôn mặt trong ảnh hay không
+    if detect_and_crop_face_static(img_bgr) is None:
+        return JSONResponse(status_code=200, content={
+            "success": False,
+            "has_face": False,
+            "message": "❌ Không tìm thấy khuôn mặt trong ảnh!"
+        })
+
+    has_bbox = all(v is not None for v in (bbox_x, bbox_y, bbox_w, bbox_h))
+    target = crop_expanded_face_2_7x(img_bgr, bbox_x, bbox_y, bbox_w, bbox_h) if has_bbox else img_bgr
     res = anti_spoof_helper.classify_face(target)
-    return {"success": True, "result": res.to_dict()}
+    return {"success": True, "has_face": True, "result": res.to_dict()}
 
 
 @app.post("/api/v1/ai/face-match")
 async def api_face_match(image1: UploadFile = File(...), image2: UploadFile = File(...)):
     """Chạy độc lập model mobile_face_net.tflite để so sánh 2 ảnh khuôn mặt."""
-    img1 = decode_image(await image1.read())
-    img2 = decode_image(await image2.read())
-    c1 = detect_and_crop_face_static(img1)
-    c2 = detect_and_crop_face_static(img2)
-    emb1 = face_match_helper.get_face_embedding(c1 if c1 is not None else img1)
-    emb2 = face_match_helper.get_face_embedding(c2 if c2 is not None else img2)
+    try:
+        img1 = decode_image(await image1.read())
+        img2 = decode_image(await image2.read())
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"success": False, "message": f"❌ {str(ve)}"})
+
+    c1 = get_face_crop_for_matching(img1)
+    c2 = get_face_crop_for_matching(img2)
+    emb1 = face_match_helper.get_face_embedding(normalize_face_lighting(c1))
+    emb2 = face_match_helper.get_face_embedding(normalize_face_lighting(c2))
     matched, similarity = face_match_helper.compare_faces(emb1, emb2)
     return {
         "success": True,
@@ -725,9 +748,14 @@ async def api_check_duplicate(
         folder: str = Form("students")
 ):
     """Kiểm tra ảnh khuôn mặt có bị trùng với tài khoản khác trong hệ thống không."""
-    img_bgr = decode_image(await image.read())
-    cropped = detect_and_crop_face_static(img_bgr)
-    dup = check_if_face_already_exists(cropped if cropped is not None else img_bgr, current_entity_id, folder)
+    try:
+        img_bgr = decode_image(await image.read())
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={"success": False, "message": f"❌ {str(ve)}"})
+
+    # Đồng bộ margin 20% với lúc upload/đăng ký để tránh lệch embedding
+    cropped = get_face_crop_for_matching(img_bgr)
+    dup = check_if_face_already_exists(cropped, current_entity_id, folder)
     if dup:
         return {"success": True, "is_duplicate": True, "duplicate_id": dup[0], "similarity": round(dup[1], 4)}
     return {"success": True, "is_duplicate": False}
